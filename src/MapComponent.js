@@ -127,6 +127,7 @@ const MapComponent = () => {
       </GoogleMap>
       </LoadScript>
 
+      {/* Show/Hide Radius Button */}
       <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000 }}>
         <button
           onClick={() => setShowRadius(!showRadius)}
@@ -143,7 +144,6 @@ const MapComponent = () => {
           top: '0px',
           left: '0px',
           backgroundColor: 'rgba(255, 255, 255, 1)',
-          // borderRadius: '8px',
           padding: '10px',
           height: '100%',
           width: '22%',
@@ -181,8 +181,8 @@ const MapComponent = () => {
           borderRadius: '8px',
           padding: '0px',
           width: '20%',
-          height: '80%',
-          maxHeight: '400px',
+          height: '660px',
+          maxHeight: '660px',
           overflowY: 'auto',
           zIndex: 1000,
           color: 'black',
@@ -228,6 +228,7 @@ const MapComponent = () => {
             )}
             <h3>{selectedRestaurant.name}</h3>
             <p>{selectedRestaurant.vicinity}</p>
+            <p>{selectedRestaurant.rating} stars ${selectedRestaurant.minPrice}{selectedRestaurant.minPriceLevel}-{selectedRestaurant.maxPrice}{selectedRestaurant.maxPriceLevel}</p>
             {/* Add more details as needed */}
           </div>
         </div>
