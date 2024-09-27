@@ -1,12 +1,22 @@
 textarea:focus, input:focus{
     outline: none;
 }
+
 h1 {
     font-weight: normal;
     font-size: calc(10px + 1.25vmin);
 }
+
 ul {
     list-style-type: none;
+}
+
+.restaurant-li {
+    padding-bottom: 30px;
+}
+
+.restaurant-li:hover {
+    background-color: lightgray;
 }
 
 .price-dropdown-btn {
@@ -15,13 +25,35 @@ ul {
     cursor: pointer;
 }
 
-.price-dropdown-options {
-    /* display: none; */
-    position: absolute;
-    min-width: 160px;
-    z-index: 1000;
-}
-
 .price-dropdown-btn:hover .price-dropdown-options {
     display: block;
+}
+
+.checkbox-option {
+    height: '20px';
+    width: '20px';
+}
+
+.clear-btn {
+    border: none;
+    color: '#3B3C3F';
+}
+
+.done-btn {
+    border: none;
+    color: '#1E76E8';
+}
+
+.rating-dropdown-btn {
+    border: none;
+    background-color: white;
+    cursor: pointer;
+}
+
+.rating-dropdown-btn:hover .rating-dropdown-options {
+    display: block;
+}
+
+.re-center-btn {
+    border: none;
 }

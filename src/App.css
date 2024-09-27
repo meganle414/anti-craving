@@ -19,7 +19,6 @@
 }
 
 .App-header-title {
-  background-color: #282c34;
   display: flex;
   align-items: center; /* Vertically center the items */
   justify-content: center; /* Center horizontally */
@@ -27,7 +26,31 @@
   margin-bottom: 2px;
 }
 
-.App-subtitle {
-  margin-top: 0px;
+.App-subtitle-container {
+  display: flex;
+  justify-content: center; /* Center the subtitle */
+  position: relative;
+  width: 100%;
+  max-width: 1850px;
   margin-bottom: 16px;
+}
+
+.App-subtitle {
+  margin: 0;
+  text-align: center;
+}
+
+.App-credit {
+  font-size: calc(10px + 0.5vmin);
+  margin: 0;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  text-align: right;
+  color: #bbb;
+}
+
+a {
+  text-decoration: none;
+  color: #bbb;
 }

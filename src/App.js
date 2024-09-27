@@ -10,7 +10,10 @@ function App() {
           <img src={logo} className="App-logo" alt="logo" />
           Anti-Craving
         </h1>
-        <p className="App-subtitle">What are you craving? What are you anti-craving?</p>
+        <div className="App-subtitle-container">
+          <p className="App-subtitle">What are you craving? What are you anti-craving?</p>
+          <p className="App-credit"><a href='https://github.com/meganle414/anti-craving'>made by Megan Le</a></p>
+        </div>
       </header>
       <div className="map-container">
         <MapComponent />

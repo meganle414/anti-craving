@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
+import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaDrumstickBite, FaHotdog, FaClock } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
@@ -15,6 +16,11 @@ const MapComponent = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [pricesFilter, setPricesFilter] = useState([]);
   const [ratingFilter, setRatingFilter] = useState(0);
+  const [isPriceDropdownOpen, setIsPriceDropdownOpen] = useState(false);
+  const [isRatingDropdownOpen, setIsRatingDropdownOpen] = useState(false);
+  const [isCravingDropdownOpen, setIsCravingDropdownOpen] = useState(false);
+  const [isAntiCravingDropdownOpen, setIsAntiCravingDropdownOpen] = useState(false);
+  const priceOptions = ['$', '$$', '$$$', '$$$$'];
   const autocompleteRef = useRef(null);
 
   const fetchRestaurants = (filters) => {
@@ -39,9 +45,12 @@ const MapComponent = () => {
 
   useEffect(() => {
     if (map) {
-      fetchRestaurants({ cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
+      updateLocationMarker(location);
+      // fetchRestaurants({ cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
     }
   }, [map, location, radius, cravings, antiCravings]);
+
+  
 
   const handleMarkerClick = (restaurant) => {
     setSelectedRestaurant(restaurant);
@@ -106,12 +115,88 @@ const MapComponent = () => {
     setCurrentCircle(newCircle);
   };
 
+  const selectFirstSuggestion = () => {
+    const autocompleteService = new window.google.maps.places.AutocompleteService();
+    const inputValue = autocompleteRef.current.input.value;
+
+    autocompleteService.getPlacePredictions({ input: inputValue }, (predictions, status) => {
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions.length) {
+        const firstPrediction = predictions[0];
+        const placeService = new window.google.maps.places.PlacesService(map);
+        
+        placeService.getDetails({ placeId: firstPrediction.place_id }, (placeDetails) => {
+          if (placeDetails && placeDetails.geometry) {
+            const newLocation = {
+              lat: placeDetails.geometry.location.lat(),
+              lng: placeDetails.geometry.location.lng(),
+            };
+            setLocation(newLocation);
+            map.setCenter(newLocation);
+            updateLocationMarker(newLocation);
+          }
+        });
+      }
+    });
+  };
+
+  const handleRecenterClick = () => {
+    map.setCenter(location);
+  }
+  
+  const handlePriceSelection = (price) => {
+    if (pricesFilter.includes(price)) {
+      setPricesFilter(pricesFilter.filter(p => p !== price)); // Deselect price
+    } else {
+      setPricesFilter([...pricesFilter, price]); // Select price
+    }
+  };
+
+  const clearPriceFilter = () => {
+    setPricesFilter([]); // Clear selected prices
+  };
+
+  const handleAnyRating = () => {
+    setRatingFilter(0); // Clears the rating filter
+    setIsRatingDropdownOpen(false);
+  };
+
+  const handleRatingSelection = (rating) => {
+    setRatingFilter(rating); // Set rating and close dropdown
+    setIsRatingDropdownOpen(false);
+  };
+
+  const getStars = (rating) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const decimal = rating % 1;
+  
+    // Push full stars
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<FaStar key={i} style={{ color: 'orange' }} />);
+    }
+  
+    // Determine whether to add a half star or a full star for the remaining decimal part
+    if (decimal > 0.7) {
+      stars.push(<FaStar key="full" style={{ color: 'orange' }} />);
+    } else if (decimal > 0.2) {
+      stars.push(<FaStarHalfAlt key="half" style={{ color: 'orange' }} />);
+    }
+  
+    // Fill remaining stars up to 5
+    const remainingStars = 5 - stars.length;
+    for (let i = 0; i < remainingStars; i++) {
+      stars.push(<FaStar key={i + fullStars + 1} style={{ color: 'gray' }} />);
+    }
+  
+    return stars;
+  };  
+
   return (
     <div className="Map" style={{ position: 'relative', height: '735px', width: '100%' }}>
       <LoadScript googleMapsApiKey="AIzaSyBmbwB277k3onIGaeJkRrBz9E2jnrXLeLc" libraries={["places"]} >
       {/* Search Bar for Address Lookup with Autocomplete */}
-      <div style={{ position: 'absolute', zIndex: 1001, width: '22%', backgroundColor: "white" }}>
-        <div className="Address-search" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1001, width: '94%' }}>
+      <div style={{ position: 'absolute', zIndex: 1001, width: '23%', height: '8%', backgroundColor: "white" }}>
+        <div className="Address-search" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1001, width: '85%' }}>
           <Autocomplete
             onLoad={(autocomplete) => {
                 autocompleteRef.current = autocomplete;
@@ -121,10 +206,14 @@ const MapComponent = () => {
             <input
               type="text"
               placeholder="Enter an address"
-              style={{ width: '100%', padding: '10px', borderRadius: '50px' }}
+              // style={{ width: '100%', padding: '10px', borderRadius: '50px' }}
+              style={{ width: '100%', padding: '10px 10px 10px 30px', borderRadius: '50px', border: '1px solid #ccc' }}
             />
           </Autocomplete>
         </div>
+        <button onClick={selectFirstSuggestion} style={{ marginLeft: '8px', padding: '5px 10px', borderRadius: '5px', zIndex: 1002 }}>
+          <FaSearch style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', color: 'gray' }} />
+        </button>
       </div>
       <GoogleMap
         center={location}
@@ -154,6 +243,7 @@ const MapComponent = () => {
         }}
         options={{
           streetViewControl: false,
+          fullscreenControl: false,
           styles: [
             { featureType: "poi", stylers: [{ visibility: "off" }]}, // Disable points of interest
             { featureType: "transit", stylers: [{ visibility: "off" }]}, // Disable transit stations
@@ -161,7 +251,6 @@ const MapComponent = () => {
           ],
         }}
         >
-
         {/* Restaurant Markers */}
         {restaurants.map((restaurant) => (
           <Marker
@@ -181,6 +270,7 @@ const MapComponent = () => {
                 : new window.google.maps.Size(30, 30), // Smaller size for unselected restaurants
             }}
           />
+          // maybe need an info window next to each marker to show the restaurant name
         ))}
       </GoogleMap>
       </LoadScript>
@@ -192,15 +282,14 @@ const MapComponent = () => {
           bottom: '0px',
           left: '0px',
           backgroundColor: 'white',
-          padding: '10px',
-          height: '90%',
+          paddingLeft: '10px',
+          paddingRight: '10px',
+          height: '92%',
           width: '22%',
           overflowY: 'auto',
           zIndex: 1000,
           color: 'black',
           textAlign: 'left',
-          scrollbarWidth: 'thin',          // For Firefox
-          scrollbarColor: 'gray lightgray' // For Firefox
         }}>
           <style>
             {`
@@ -221,14 +310,115 @@ const MapComponent = () => {
               div::-webkit-scrollbar-button {
                 display: none; /* Remove scrollbar arrows/buttons */
               }
+
+              /* For Firefox */
+              div {
+                scrollbar-width: thin;
+                scrollbar-color: gray lightgray;
+              }
+
+              /* Hides scrollbar arrows on Firefox */
+              div::-webkit-scrollbar-button {
+                display: none;
+              }
             `}
           </style>
           <h1>Results</h1>
-          <ul>
+          <ul style={{ paddingLeft: '10px', paddingRight: '10px' }}>
+            <li className='restaurant-li'>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+                  Chiba Japanese<br />
+                  4.5 stars {getStars(4.5)} $10-20<br />
+                  Japanese · 10435 San Diego Mission Rd, San Diego, CA 92108<br />
+                  Casual spot for sushi & noodles<br />
+                  Open · Closes 9 PM
+                </div>
+                <div>
+                  <img
+                    src="https://lh5.googleusercontent.com/p/AF1QipPhRqDxqTti3lsofIQZvPhbS0h5-mb13Vgtguoe=w426-h240-k-no"
+                    alt="restaurant" 
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: '12px',
+                    }}
+                  />
+                </div>
+              </div>
+            </li>
+            <li className='restaurant-li'>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+                  Jump Tokyo<br />
+                  4.6 stars {getStars(4.6)} $10-20<br />
+                  Sushi · # R, 2311, 10450 Friars Rd, San Diego, CA 92120<br />
+                  Unassuming Japanese eatery & sushi bar<br />
+                  Open · Closes 9 PM<br />
+                  Dine-in · Takeout · No delivery
+                </div>
+                <div>
+                  <img
+                    src="https://lh3.googleusercontent.com/gps-proxy/ALd4DhHfs4iec3chtq_m6qAyel7CfUmR2-OPmnzK_fDvGjPzvPiPA8OfckB5_HBbbAFqPTA1cktHl_PjC57GZvpP2uIG9huhHzuuMJtMG3b-FpdO8hbUzvWKzWsiEkePOhy1Nb0KN2uvMNGtma7FmebR3k8SU5uZ8hYkGWy-YCQOhyLOBaBLifJwd1E=w426-h240-k-no"
+                    alt="restaurant" 
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: '12px'
+                    }}
+                  />
+                </div>
+              </div>
+            </li>
+            <li className='restaurant-li'>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+                  Sushi Kuchi<br />
+                  4.3 stars {getStars(4.3)} $20-30<br />
+                  Sushi · 2408 Northside Dr, San Diego, CA 92108<br />
+                  Casual spot for sushi & teriyaki<br />
+                  Open · Closes 9:15<br />
+                  Dine-in · Takeout · No delivery
+                </div>
+                <div>
+                  <img
+                    src="https://lh5.googleusercontent.com/p/AF1QipN2TnzDFtG1zwBtvsHScMWbVizfexSzfp74syo=w408-h263-k-no"
+                    alt="restaurant" 
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: '12px'
+                    }}
+                  />
+                </div>
+              </div>
+            </li>
+            <li className='restaurant-li'>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+                  KUMI Sushi Grill<br />
+                  4.5 stars {getStars(4.5)} $10-20<br />
+                  Sushi · 4380 Kearny Mesa Rd # 300, San Diego, CA 92111<br />
+                  Open · Closes 9:15<br />
+                  Dine-in · Takeout · No delivery
+                </div>
+                <div>
+                  <img
+                    src="https://lh5.googleusercontent.com/p/AF1QipMUNbqtQXvZcBeLZY0Wvfep7ECo7dahY1l54mr_=w408-h271-k-no"
+                    alt="restaurant" 
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: '12px'
+                    }}
+                  />
+                </div>
+              </div>
+            </li>
             {restaurants.map((restaurant) => (
               <li key={restaurant.place_id} onClick={() => handleMarkerClick(restaurant)}>
-                {restaurant.name}<br></br>
-                {restaurant.rating} stars ${restaurant.minPrice}{restaurant.minPriceLevel}-{restaurant.maxPrice}{restaurant.maxPriceLevel}<br></br>
+                {restaurant.name}<br />
+                {restaurant.rating} stars {getStars(restaurant.rating)} ${restaurant.minPrice}{restaurant.minPriceLevel}-{restaurant.maxPrice}{restaurant.maxPriceLevel}<br />
                 <img
                   src={getPhotoUrl(restaurant.photos)} 
                   alt="restaurant" 
@@ -237,6 +427,11 @@ const MapComponent = () => {
                     height: 'auto',
                   }}
                 />
+                {/* restaurant address */}
+                {/* hours */}
+                {/* website */}
+                {/* number */}
+                {/* order online, check wait time, reserve a table */}
               </li>
             ))}
           </ul>
@@ -281,12 +476,7 @@ const MapComponent = () => {
           >
             X
           </button>
-          <div style={{
-              // this did nothing?
-              // alignItems: 'left', 
-              // justifyContent: 'left', 
-            }}
-          >
+          <div>
             {selectedRestaurant.photos && selectedRestaurant.photos.length > 0 && (
               <img
               src={getPhotoUrl(selectedRestaurant.photos)} 
@@ -308,8 +498,7 @@ const MapComponent = () => {
       )}
 
       {/* Filters Overlay View */}
-      {/* price */}
-      {/* $, $$, $$$, $$$$ */}
+      {/* prices */}
       <div className='price-dropdown'
           style={{
           position: 'absolute',
@@ -320,24 +509,25 @@ const MapComponent = () => {
           borderRadius: '8px',
           padding: '0px',
           width: '6%',
-          height: '45px',
+          height: '40px',
           overflowX: 'hidden',
           overflowY: 'auto',
           zIndex: 1000,
           color: 'black',
           alignContent: 'center',
-          // justifyContent: 'center',
-          // paddingLeft: '5px',
-          // paddingRight: '5px',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='price-dropdown-btn'>
-            <label>
-              {pricesFilter.length === 0 ? <img src='https://t3.ftcdn.net/jpg/05/29/34/86/360_F_529348660_zJmzCQVAsjm39091iW7IAQaUoGFs3BrG.jpg' alt='cash' width={25}/> : <img src='https://www.dat.com/blog/wp-content/uploads/2023/07/checkmark_dat_blue-01_720.png' alt='checkmark' width={25}/>} {pricesFilter.length === 0 ? "Prices" : pricesFilter.join(', ')} ▼
+          <button className='price-dropdown-btn' onClick={() => {setIsPriceDropdownOpen(!isPriceDropdownOpen); setIsRatingDropdownOpen(false); }}>
+            <label style={{ fontSize: 15 }}>
+              {pricesFilter.length === 0 ? <FaRegMoneyBillAlt style={{ fontSize: 20 }} /> : <FaCheck style={{ color: '#1F76E8' }} />}
+              {pricesFilter.length === 0 ? " Prices" : ` ${pricesFilter.join(', ')}`}
+              {/* want it to be like $-$$$ instead and grab minimum value and maximum value IF CONTINOUS OR DO $$, $$$$ if NON CONTINOUS OPTIONS SELECTED */}
+              {pricesFilter.length === 0 ? <FaCaretDown /> : <FaCaretDown style={{ color: '#1F76E8' }} />}
             </label>
           </button>
       </div>
-
-      <div className='price-dropdown-options'
+      {isPriceDropdownOpen && (
+        <div className='price-dropdown-options'
           style={{
           position: 'absolute',
           top: '70px',
@@ -346,30 +536,106 @@ const MapComponent = () => {
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
-          width: '4%',
-          height: '150px',
-          overflowX: 'hidden',
-          overflowY: 'auto',
+          width: '6.25%',
+          height: '175px',
           zIndex: 1002,
           color: 'black',
-          paddingLeft: '10px',
-          paddingRight: '15px',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+          textAlign: 'left',
+          paddingLeft: '20px',
+          paddingTop: '20px',
         }}>
           <div class="price-dropdown-content">
-            <input type="checkbox" id="$" name="$" value="$" />
-            <label for="$">$</label><br />
-            <input type="checkbox" id="$$" name="$$" value="$$" />
-            <label for="$$">$$</label><br />
-            <input type="checkbox" id="$$$" name="$$$" value="$$$" />
-            <label for="$$$">$$$</label><br />
-            <input type="checkbox" id="$$$$" name="$$$$" value="$$$$" />
-            <label for="$$$$">$$$$</label><br />
-            <button className='clear-btn'>Clear</button><button className='done-button'>Done</button>
+            {priceOptions.map((price) => (
+              <div key={price}>
+                <input
+                  type="checkbox"
+                  id={price}
+                  name={price}
+                  value={price}
+                  checked={pricesFilter.includes(price)}
+                  onChange={() => handlePriceSelection(price)}
+                />
+                <label htmlFor={price}>{price}</label>
+              </div>
+            ))}
+            <button className='clear-btn' onClick={clearPriceFilter}>Clear</button>
+            <button className='done-btn'>Done</button>
           </div>
         </div>
+      )}
 
       {/* rating */}
-      {/* Any rating, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5 */}
+      <div className='rating-dropdown'
+          style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '30.75%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '6%',
+          height: '40px',
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='rating-dropdown-btn' onClick={() => {setIsRatingDropdownOpen(!isRatingDropdownOpen); setIsPriceDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false);}}>
+            <label style={{ fontSize: 15 }}>
+              {ratingFilter === 0 ? <FaStar /> : <FaCheck style={{ color: '#1F76E8' }} />}
+              {ratingFilter === 0 ? " Rating " : <label style={{ color: '#1F76E8' }}> {ratingFilter.toFixed(1)}+ <FaStar style={{ color: 'orange' }}/></label>}
+              {ratingFilter === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
+            </label>
+          </button>
+      </div>
+      {isRatingDropdownOpen && (
+          <div className='rating-dropdown-options' style={{
+            position: 'absolute',
+            zIndex: 1002,
+            top: '70px',
+            bottom: '50px',
+            left: '30.75%',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '0px',
+            width: '8.5%',
+            height: '250px',
+            color: 'black',
+            paddingLeft: '20px',
+            paddingRight: '0px',
+            boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+            textAlign: 'left',
+          }}>
+            <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px' }}>
+              <label style={{ fontSize: 15 }}>Any rating</label>
+            </button>
+            {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5].map((rating) => (
+              <div key={rating}>
+                <button
+                  id={`${rating}-stars`}
+                  name="rating"
+                  value={rating}
+                  onClick={() => handleRatingSelection(rating)}
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    border: 'none',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                />
+                <label htmlFor={`${rating}-stars`}>
+                  {`${rating.toFixed(1)} stars`} {getStars(rating)}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* cravings (cuisines) */}
       {/* American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai, Clear */}
@@ -390,15 +656,16 @@ const MapComponent = () => {
           borderRadius: '8px',
           padding: '0px',
           width: '17%',
-          height: '45px',
+          height: '40px',
           overflowX: 'hidden',
           overflowY: 'auto',
           zIndex: 1000,
-          display: 'flex', // Use flexbox
+          display: 'flex',
           alignItems: 'center', // Vertically align items
           paddingLeft: '10px',
           paddingRight: '10px',
-          gap: '10px' // Space between label and slider
+          gap: '10px', // Space between label and slider
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
           <label>Distance:</label>
           <input
@@ -421,7 +688,31 @@ const MapComponent = () => {
 
       {/* all filters */}
       {/* z-index 1001 to go above the restaurant list */}
+
+      {/* re-center */}
+      <div style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '70%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '5.5%',
+          height: '40px',
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='re-center-btn' onClick={handleRecenterClick}>
+            <label><img src='https://cdn3.iconfinder.com/data/icons/glypho-travel/64/gps-position-target-512.png' alt='re-center-target' width={20} style={{ marginTop: '5px' }}></img> Re-center</label>
+          </button>
+      </div>
     </div>
+    
   );
 };
 
