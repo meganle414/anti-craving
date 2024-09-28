@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
-import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaDrumstickBite, FaHotdog, FaClock } from 'react-icons/fa';
+import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaDrumstickBite, FaHotdog, FaRegSmileBeam, FaFrown, FaTimes, FaClock } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
@@ -20,8 +20,10 @@ const MapComponent = () => {
   const [isRatingDropdownOpen, setIsRatingDropdownOpen] = useState(false);
   const [isCravingDropdownOpen, setIsCravingDropdownOpen] = useState(false);
   const [isAntiCravingDropdownOpen, setIsAntiCravingDropdownOpen] = useState(false);
+  const [isHoursDropdownOpen, setIsHoursDropdownOpen] = useState(false);
   const priceOptions = ['$', '$$', '$$$', '$$$$'];
   const autocompleteRef = useRef(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const fetchRestaurants = (filters) => {
     const service = new window.google.maps.places.PlacesService(map);
@@ -48,7 +50,7 @@ const MapComponent = () => {
       updateLocationMarker(location);
       // fetchRestaurants({ cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
     }
-  }, [map, location, radius, cravings, antiCravings]);
+  }, [map, location, cravings, antiCravings]);  // originally had radius on here too but there was an issue with it drawing too many circles! re-add in final product with fetch restaurants
 
   
 
@@ -139,31 +141,85 @@ const MapComponent = () => {
     });
   };
 
+  const handleScroll = (event) => {
+    const scrollTop = event.target.scrollTop;
+    setIsScrolled(scrollTop > 0);  // Set to true if user scrolls down
+  };
+
   const handleRecenterClick = () => {
     map.setCenter(location);
   }
   
   const handlePriceSelection = (price) => {
+    let updatedPrices;
     if (pricesFilter.includes(price)) {
-      setPricesFilter(pricesFilter.filter(p => p !== price)); // Deselect price
+      updatedPrices = pricesFilter.filter(p => p !== price); // Deselect price
     } else {
-      setPricesFilter([...pricesFilter, price]); // Select price
+      updatedPrices = [...pricesFilter, price]; // Select price
     }
+
+    // Sort prices based on the order of priceOptions
+    updatedPrices.sort((a, b) => priceOptions.indexOf(a) - priceOptions.indexOf(b));
+    setPricesFilter(updatedPrices);
+  };
+
+  const formatPriceDisplay = () => {
+    if (pricesFilter.length === 0) return '';
+    if (pricesFilter.length === 1) return pricesFilter;
+  
+    const priceIndices = pricesFilter.map(price => priceOptions.indexOf(price));
+    const minPriceIndex = Math.min(...priceIndices);
+    const maxPriceIndex = Math.max(...priceIndices);
+  
+    if (maxPriceIndex - minPriceIndex === pricesFilter.length - 1) {
+      return `${priceOptions[minPriceIndex]}-${priceOptions[maxPriceIndex]}`; // Continuous range
+    }
+    return pricesFilter.join(', '); // Non-continuous values
   };
 
   const clearPriceFilter = () => {
     setPricesFilter([]); // Clear selected prices
   };
 
+  const donePriceFilter = () => {
+    setIsPriceDropdownOpen(false);
+  };
+
   const handleAnyRating = () => {
     setRatingFilter(0); // Clears the rating filter
     setIsRatingDropdownOpen(false);
   };
-
+  
   const handleRatingSelection = (rating) => {
     setRatingFilter(rating); // Set rating and close dropdown
     setIsRatingDropdownOpen(false);
   };
+
+  const handleCravingSelection = (craving) => {
+    if (cravings.includes(craving)) {
+      setCravings(cravings.filter(c => c !== craving)); // Deselect craving
+    } else {
+      setCravings([...cravings, craving]); // Select craving
+    }
+  }
+
+  const handleAnyCraving = () => {
+    setCravings([]); // Clears the cravings filter
+    setIsCravingDropdownOpen(false);
+  }
+
+  const handleAntiCravingSelection = (antiCraving) => {
+    if (antiCravings.includes(antiCraving)) {
+      setAntiCravings(antiCravings.filter(c => c !== antiCraving)); // Deselect anti-craving
+    } else {
+      setAntiCravings([...antiCravings, antiCraving]); // Select anti-craving
+    }
+  }
+
+  const handleClearAntiCraving = () => {
+    setAntiCravings([]); // Clears the anti-cravings filter
+    setIsAntiCravingDropdownOpen(false);
+  }
 
   const getStars = (rating) => {
     const stars = [];
@@ -195,7 +251,7 @@ const MapComponent = () => {
     <div className="Map" style={{ position: 'relative', height: '735px', width: '100%' }}>
       <LoadScript googleMapsApiKey="AIzaSyBmbwB277k3onIGaeJkRrBz9E2jnrXLeLc" libraries={["places"]} >
       {/* Search Bar for Address Lookup with Autocomplete */}
-      <div style={{ position: 'absolute', zIndex: 1001, width: '23%', height: '8%', backgroundColor: "white" }}>
+      <div style={{ position: 'absolute', zIndex: 1001, width: '23%', height: '8%', backgroundColor: "white", boxShadow: isScrolled ? '0 4px 2px -2px rgba(0, 0, 0, 0.3)' : 'none' }}>
         <div className="Address-search" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1001, width: '85%' }}>
           <Autocomplete
             onLoad={(autocomplete) => {
@@ -206,7 +262,6 @@ const MapComponent = () => {
             <input
               type="text"
               placeholder="Enter an address"
-              // style={{ width: '100%', padding: '10px', borderRadius: '50px' }}
               style={{ width: '100%', padding: '10px 10px 10px 30px', borderRadius: '50px', border: '1px solid #ccc' }}
             />
           </Autocomplete>
@@ -277,20 +332,22 @@ const MapComponent = () => {
 
       {/* Overlay List View */}
       {(restaurants || antiCravings) && (
-        <div style={{
-          position: 'absolute',
-          bottom: '0px',
-          left: '0px',
-          backgroundColor: 'white',
-          paddingLeft: '10px',
-          paddingRight: '10px',
-          height: '92%',
-          width: '22%',
-          overflowY: 'auto',
-          zIndex: 1000,
-          color: 'black',
-          textAlign: 'left',
-        }}>
+        <div onScroll={handleScroll}
+          style={{
+            position: 'absolute',
+            bottom: '0px',
+            left: '0px',
+            backgroundColor: 'white',
+            paddingLeft: '10px',
+            paddingRight: '10px',
+            height: '92%',
+            width: '22%',
+            overflowY: 'auto',
+            zIndex: 1000,
+            color: 'black',
+            textAlign: 'left',
+          }}
+        >
           <style>
             {`
               /* For WebKit browsers (Chrome, Safari, Edge) */
@@ -323,12 +380,12 @@ const MapComponent = () => {
               }
             `}
           </style>
-          <h1>Results</h1>
+          <h1 style={{ paddingLeft: '10px' }}>Results</h1>
           <ul style={{ paddingLeft: '10px', paddingRight: '10px' }}>
             <li className='restaurant-li'>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
-                  Chiba Japanese<br />
+                <h3 className='restaurant-li-name'>Chiba Japanese</h3>
                   4.5 stars {getStars(4.5)} $10-20<br />
                   Japanese · 10435 San Diego Mission Rd, San Diego, CA 92108<br />
                   Casual spot for sushi & noodles<br />
@@ -350,7 +407,7 @@ const MapComponent = () => {
             <li className='restaurant-li'>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
-                  Jump Tokyo<br />
+                <h3 className='restaurant-li-name'>Jump Tokyo</h3>
                   4.6 stars {getStars(4.6)} $10-20<br />
                   Sushi · # R, 2311, 10450 Friars Rd, San Diego, CA 92120<br />
                   Unassuming Japanese eatery & sushi bar<br />
@@ -372,8 +429,8 @@ const MapComponent = () => {
             </li>
             <li className='restaurant-li'>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
-                  Sushi Kuchi<br />
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
+                  <h3 className='restaurant-li-name'>Sushi Kuchi</h3>
                   4.3 stars {getStars(4.3)} $20-30<br />
                   Sushi · 2408 Northside Dr, San Diego, CA 92108<br />
                   Casual spot for sushi & teriyaki<br />
@@ -396,7 +453,7 @@ const MapComponent = () => {
             <li className='restaurant-li'>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
-                  KUMI Sushi Grill<br />
+                <h3 className='restaurant-li-name'>KUMI Sushi Grill</h3>
                   4.5 stars {getStars(4.5)} $10-20<br />
                   Sushi · 4380 Kearny Mesa Rd # 300, San Diego, CA 92111<br />
                   Open · Closes 9:15<br />
@@ -517,10 +574,10 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='price-dropdown-btn' onClick={() => {setIsPriceDropdownOpen(!isPriceDropdownOpen); setIsRatingDropdownOpen(false); }}>
-            <label style={{ fontSize: 15 }}>
+          <button className='price-dropdown-btn' onClick={() => {setIsPriceDropdownOpen(!isPriceDropdownOpen); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); }}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', alignContent: 'center', gap: '5px' }}>
               {pricesFilter.length === 0 ? <FaRegMoneyBillAlt style={{ fontSize: 20 }} /> : <FaCheck style={{ color: '#1F76E8' }} />}
-              {pricesFilter.length === 0 ? " Prices" : ` ${pricesFilter.join(', ')}`}
+              {pricesFilter.length === 0 ? "Prices" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{formatPriceDisplay()}</label>}
               {/* want it to be like $-$$$ instead and grab minimum value and maximum value IF CONTINOUS OR DO $$, $$$$ if NON CONTINOUS OPTIONS SELECTED */}
               {pricesFilter.length === 0 ? <FaCaretDown /> : <FaCaretDown style={{ color: '#1F76E8' }} />}
             </label>
@@ -536,18 +593,19 @@ const MapComponent = () => {
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
-          width: '6.25%',
+          width: '5.75%',
           height: '175px',
           zIndex: 1002,
           color: 'black',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
           textAlign: 'left',
           paddingLeft: '20px',
-          paddingTop: '20px',
+          paddingTop: '15px',
+          fontSize: '16px',
         }}>
           <div class="price-dropdown-content">
             {priceOptions.map((price) => (
-              <div key={price}>
+              <div key={price} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px'  }}>
                 <input
                   type="checkbox"
                   id={price}
@@ -555,12 +613,13 @@ const MapComponent = () => {
                   value={price}
                   checked={pricesFilter.includes(price)}
                   onChange={() => handlePriceSelection(price)}
+                  style={{ height: '18px', width: '18px' }}
                 />
                 <label htmlFor={price}>{price}</label>
               </div>
             ))}
-            <button className='clear-btn' onClick={clearPriceFilter}>Clear</button>
-            <button className='done-btn'>Done</button>
+            <button className='clear-btn' onClick={clearPriceFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+            <button className='done-btn' onClick={donePriceFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
           </div>
         </div>
       )}
@@ -584,10 +643,10 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='rating-dropdown-btn' onClick={() => {setIsRatingDropdownOpen(!isRatingDropdownOpen); setIsPriceDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false);}}>
-            <label style={{ fontSize: 15 }}>
+          <button className='rating-dropdown-btn' onClick={() => {setIsRatingDropdownOpen(!isRatingDropdownOpen); setIsPriceDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); }}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
               {ratingFilter === 0 ? <FaStar /> : <FaCheck style={{ color: '#1F76E8' }} />}
-              {ratingFilter === 0 ? " Rating " : <label style={{ color: '#1F76E8' }}> {ratingFilter.toFixed(1)}+ <FaStar style={{ color: 'orange' }}/></label>}
+              {ratingFilter === 0 ? "Rating" : <label style={{ color: '#1F76E8' }}> {ratingFilter.toFixed(1)}+ <FaStar style={{ color: 'orange' }}/></label>}
               {ratingFilter === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
             </label>
           </button>
@@ -602,19 +661,23 @@ const MapComponent = () => {
             backgroundColor: 'white',
             borderRadius: '8px',
             padding: '0px',
-            width: '8.5%',
-            height: '250px',
+            width: '9.5%',
+            height: '295px',
             color: 'black',
-            paddingLeft: '20px',
+            // paddingLeft: '20px',
             paddingRight: '0px',
             boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
             textAlign: 'left',
+            // alignContent: 'center',
+            // alignItems: 'center',
           }}>
-            <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px' }}>
-              <label style={{ fontSize: 15 }}>Any rating</label>
-            </button>
+            <div style={{ backgroundColor: 'transparent' }}>
+              <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', marginBottom: '15px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: 'transparent' }}>
+                <label style={{ fontSize: 15, backgroundColor: 'transparent' }}>Any rating</label>
+              </button>
+            </div>
             {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5].map((rating) => (
-              <div key={rating}>
+              <div key={rating} style={{ paddingLeft: '20px', backgroundColor: ratingFilter === rating ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }}>
                 <button
                   id={`${rating}-stars`}
                   name="rating"
@@ -627,6 +690,7 @@ const MapComponent = () => {
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
+                    backgroundColor: 'transparent',
                   }}
                 />
                 <label htmlFor={`${rating}-stars`}>
@@ -638,10 +702,154 @@ const MapComponent = () => {
         )}
 
       {/* cravings (cuisines) */}
-      {/* American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai, Clear */}
+      {/* Any cuisine, American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai */}
+      <div className='craving-dropdown'
+          style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '37.5%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '6.5%',
+          height: '40px',
+          // overflowX: 'hidden',
+          // overflowY: 'hidden',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='craving-dropdown-btn' onClick={() => {setIsCravingDropdownOpen(!isCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsAntiCravingDropdownOpen(false);}}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {cravings.length === 0 ? <FaHamburger /> : <FaCheck style={{ color: '#1F76E8' }} />}
+              {cravings.length === 0 ? "Cravings" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{cravings.join(', ')}</label>}
+              {cravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
+            </label>
+          </button>
+      </div>
+      {isCravingDropdownOpen && (
+          <div className='craving-dropdown-options' style={{
+            position: 'absolute',
+            zIndex: 1002,
+            top: '70px',
+            bottom: '50px',
+            left: '37.5%',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '0px',
+            width: '8.5%',
+            height: '615px',
+            color: 'black',
+            // paddingLeft: '20px',
+            paddingRight: '0px',
+            boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+            textAlign: 'left',
+            fontSize: 15,
+          }}>
+            <button onClick={handleAnyCraving} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', paddingLeft: '20px', marginBottom: '15px', backgroundColor: 'transparent' }}>
+              <label style={{ fontSize: 15 }}>Any cuisine</label>
+            </button>
+            {["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"].map((craving) => (
+              <div key={craving} style={{ paddingLeft: '20px', backgroundColor: cravings.includes(craving) ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }} >
+                <button
+                  id={`${craving}`}
+                  name="craving"
+                  value={craving}
+                  onClick={() => handleCravingSelection(craving)}
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'transparent',
+                  }}
+                />
+                <label htmlFor={`${craving}`} style={{  }}>
+                  {`${craving}`}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* anti-cravings (cuisines) */}
-      {/* American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai, Clear */}
+      {/* American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai */}
+      <div className='anti-craving-dropdown'
+          style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '44.75%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '8%',
+          height: '40px',
+          // overflowX: 'hidden',
+          // overflowY: 'hidden',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='anti-craving-dropdown-btn' onClick={() => {setIsAntiCravingDropdownOpen(!isAntiCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false);}}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {antiCravings.length === 0 ? <FaHamburger /> : <FaTimes style={{ color: '#E82720' }} />}
+              {antiCravings.length === 0 ? "Anti-Cravings" : <label style={{ fontSize: 15, color: '#E82720' }}>{antiCravings.join(', ')}</label>}
+              {antiCravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#E82720' }}></FaCaretDown> }
+            </label>
+          </button>
+      </div>
+      {isAntiCravingDropdownOpen && (
+          <div className='anti-craving-dropdown-options' style={{
+            position: 'absolute',
+            zIndex: 1002,
+            top: '70px',
+            bottom: '50px',
+            left: '44.75%',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '0px',
+            width: '8.5%',
+            height: '615px',
+            color: 'black',
+            // paddingLeft: '20px',
+            paddingRight: '0px',
+            boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+            textAlign: 'left',
+            fontSize: 15,
+          }}>
+            <button onClick={handleClearAntiCraving} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', paddingLeft: '20px', marginBottom: '15px', backgroundColor: 'transparent' }}>
+              <label style={{ fontSize: 15 }}>Clear</label>
+            </button>
+            {["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"].map((antiCraving) => (
+              <div key={antiCraving} style={{ paddingLeft: '20px', backgroundColor: antiCravings.includes(antiCraving) ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }} >
+                <button
+                  id={`${antiCraving}`}
+                  name="antiCraving"
+                  value={antiCraving}
+                  onClick={() => handleAntiCravingSelection(antiCraving)}
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'transparent',
+                  }}
+                />
+                <label htmlFor={`${antiCraving}`} style={{  }}>
+                  {`${antiCraving}`}
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* hours (open/closed) */}
       {/* Any time, Open now, Open 24 hours */}
@@ -651,20 +859,20 @@ const MapComponent = () => {
           position: 'absolute',
           top: '10px',
           bottom: '50px',
-          left: '50%',
+          left: '53.5%',
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
-          width: '17%',
+          width: '16.5%',
           height: '40px',
           overflowX: 'hidden',
           overflowY: 'auto',
           zIndex: 1000,
           display: 'flex',
-          alignItems: 'center', // Vertically align items
+          alignItems: 'center',
           paddingLeft: '10px',
           paddingRight: '10px',
-          gap: '10px', // Space between label and slider
+          gap: '10px',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
           <label>Distance:</label>
@@ -678,9 +886,9 @@ const MapComponent = () => {
             onChange={(e) => {
               const miles = parseFloat(e.target.value); // Get the slider value in miles
               const meters = miles * 1609.34; // Convert miles to meters
-              setRadius(meters); // Update the radius in meters
-              updateCircle(location); // Redraw the circle with the new radius
+              setRadius(meters);
             }}
+            onMouseUp={() => updateCircle(location)}
             style={{ width: '50%' }}
           />
           <label>{(radius / 1609.34).toFixed(1)} miles</label>
@@ -694,7 +902,7 @@ const MapComponent = () => {
           position: 'absolute',
           top: '10px',
           bottom: '50px',
-          left: '70%',
+          left: '71.75%',
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
@@ -707,8 +915,9 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='re-center-btn' onClick={handleRecenterClick}>
-            <label><img src='https://cdn3.iconfinder.com/data/icons/glypho-travel/64/gps-position-target-512.png' alt='re-center-target' width={20} style={{ marginTop: '5px' }}></img> Re-center</label>
+          <button className='re-center-btn' onClick={handleRecenterClick} style={{ display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '5px', marginRight: '5px' }}>
+            <img src='https://cdn3.iconfinder.com/data/icons/glypho-travel/64/gps-position-target-512.png' alt='re-center-target' width={20}></img> 
+            <label>Re-center</label>
           </button>
       </div>
     </div>

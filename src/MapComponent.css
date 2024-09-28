@@ -19,39 +19,38 @@ ul {
     background-color: lightgray;
 }
 
+.restaurant-li-name {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: calc(10px + 0.6vmin);
+}
+
 .price-dropdown-btn {
     border: none;
     background-color: white;
-    cursor: pointer;
-}
-
-.price-dropdown-btn:hover .price-dropdown-options {
-    display: block;
-}
-
-.checkbox-option {
-    height: '20px';
-    width: '20px';
 }
 
 .clear-btn {
-    border: none;
-    color: '#3B3C3F';
+    border: none; 
 }
 
 .done-btn {
     border: none;
-    color: '#1E76E8';
 }
 
 .rating-dropdown-btn {
     border: none;
     background-color: white;
-    cursor: pointer;
 }
 
-.rating-dropdown-btn:hover .rating-dropdown-options {
-    display: block;
+.craving-dropdown-btn {
+    border: none;
+    background-color: white;
+}
+
+.anti-craving-dropdown-btn {
+    border: none;
+    background-color: white;
 }
 
 .re-center-btn {
