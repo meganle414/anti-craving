@@ -1,29 +1,42 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
-import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaDrumstickBite, FaHotdog, FaRegSmileBeam, FaFrown, FaTimes, FaClock } from 'react-icons/fa';
+import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
   const [map, setMap] = useState(null);
   const [radius, setRadius] = useState(4828); // ~3 miles by default
-  const [restaurants, setRestaurants] = useState([]);
-  const [antiRestaurants, setAntiRestaurants] = useState([]);
-  const [cravings, setCravings] = useState([]);
-  const [antiCravings, setAntiCravings] = useState([]);
   const [location, setLocation] = useState({ lat: 41.8781, lng: -87.6298 }); // Default to Chicago
+
+  // informaiton about current selections
   const [currentLocationMarker, setCurrentLocationMarker] = useState(null);
   const [currentCircle, setCurrentCircle] = useState(null);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [previewRestaurant, setPreviewRestaurant] = useState(null);
+
+  // filter options (data)
+  const [restaurants, setRestaurants] = useState([]);
+  const [antiRestaurants, setAntiRestaurants] = useState([]);
   const [pricesFilter, setPricesFilter] = useState([]);
   const [ratingFilter, setRatingFilter] = useState(0);
+  const [cravings, setCravings] = useState([]);
+  const [antiCravings, setAntiCravings] = useState([]);
+  const [hoursFilter, setHoursFilter] = useState(["Any time"]);
+
+  // whether scrolled or not on menu list
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // dropdown/filter option choices
   const [isPriceDropdownOpen, setIsPriceDropdownOpen] = useState(false);
   const [isRatingDropdownOpen, setIsRatingDropdownOpen] = useState(false);
   const [isCravingDropdownOpen, setIsCravingDropdownOpen] = useState(false);
   const [isAntiCravingDropdownOpen, setIsAntiCravingDropdownOpen] = useState(false);
   const [isHoursDropdownOpen, setIsHoursDropdownOpen] = useState(false);
+  const [isAllFiltersOpen, setIsAllFiltersOpen] = useState(false);
+
   const priceOptions = ['$', '$$', '$$$', '$$$$'];
+  const hoursOptions = ['Any time', 'Open now', 'Open 24 hours'];
   const autocompleteRef = useRef(null);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   const fetchRestaurants = (filters) => {
     const service = new window.google.maps.places.PlacesService(map);
@@ -50,13 +63,17 @@ const MapComponent = () => {
       updateLocationMarker(location);
       // fetchRestaurants({ cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
     }
-  }, [map, location, cravings, antiCravings]);  // originally had radius on here too but there was an issue with it drawing too many circles! re-add in final product with fetch restaurants
+  }, [map, location, cravings, antiCravings]);
 
   
 
   const handleMarkerClick = (restaurant) => {
     setSelectedRestaurant(restaurant);
   };
+
+  const handlePreviewMarker = (restaurant) => {
+    setPreviewRestaurant(restaurant);
+  }
 
   const getPhotoUrl = (photos) => {
     if (photos && photos.length > 0) {
@@ -115,6 +132,7 @@ const MapComponent = () => {
     });
 
     setCurrentCircle(newCircle);
+    // need to refetch restaurants in this area
   };
 
   const selectFirstSuggestion = () => {
@@ -221,6 +239,18 @@ const MapComponent = () => {
     setIsAntiCravingDropdownOpen(false);
   }
 
+  const handleHoursSelection = (hour) => {
+    setHoursFilter(hour);
+  }
+
+  const clearHoursFilter = () => {
+    setHoursFilter("Any time");
+  }
+
+  const applyHoursFilter = () => {
+    setIsHoursDropdownOpen(false);
+  }
+
   const getStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -308,24 +338,41 @@ const MapComponent = () => {
         >
         {/* Restaurant Markers */}
         {restaurants.map((restaurant) => (
-          <Marker
-            key={restaurant.place_id}
-            position={{
-              lat: restaurant.geometry.location.lat(),
-              lng: restaurant.geometry.location.lng(),
-            }}
-            title={restaurant.name}
-            onClick={() => handleMarkerClick(restaurant)}
-            icon={{
-              url: selectedRestaurant === restaurant
-                ? 'https://i.imgur.com/xwUdnAf.png' // Red marker for selected restaurant
-                : 'https://i.imgur.com/an6s4x2.png', // Custom marker for unselected restaurants
-              scaledSize: selectedRestaurant === restaurant
-                ? new window.google.maps.Size(45, 45)  // Larger size for selected restaurant
-                : new window.google.maps.Size(30, 30), // Smaller size for unselected restaurants
-            }}
-          />
-          // maybe need an info window next to each marker to show the restaurant name
+          <React.Fragment key={restaurant.place_id}>
+            <Marker
+              position={{
+                lat: restaurant.geometry.location.lat(),
+                lng: restaurant.geometry.location.lng(),
+              }}
+              title={restaurant.name}
+              onClick={() => handleMarkerClick(restaurant)}
+              onMouseOver={() => handlePreviewMarker(restaurant)}
+              onMouseOut={() => setPreviewRestaurant(null)}
+              icon={{
+                url: (selectedRestaurant === restaurant || previewRestaurant === restaurant)
+                  ? 'https://i.imgur.com/xwUdnAf.png' // Red marker for selected/previewed restaurant
+                  : 'https://i.imgur.com/an6s4x2.png', // Custom marker for unselected restaurants
+                scaledSize: (selectedRestaurant === restaurant || previewRestaurant === restaurant)
+                  ? new window.google.maps.Size(45, 45)  // Larger size for selected/previewed restaurant
+                  : new window.google.maps.Size(30, 30), // Smaller size for unselected restaurants
+              }}
+            />
+            {/* Restaurant Name */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '-10px',
+                left: '40px', // Shift the label to the right of the marker. May need to adjust more
+                backgroundColor: 'transparent',
+                padding: '0px',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                fontWeight: 'bold',
+              }}
+            >
+              {restaurant.name}
+            </div>
+          </React.Fragment>
         ))}
       </GoogleMap>
       </LoadScript>
@@ -338,7 +385,7 @@ const MapComponent = () => {
             bottom: '0px',
             left: '0px',
             backgroundColor: 'white',
-            paddingLeft: '10px',
+            // paddingLeft: '10px',
             paddingRight: '10px',
             height: '92%',
             width: '22%',
@@ -380,11 +427,12 @@ const MapComponent = () => {
               }
             `}
           </style>
-          <h1 style={{ paddingLeft: '10px' }}>Results</h1>
-          <ul style={{ paddingLeft: '10px', paddingRight: '10px' }}>
+          <h1 style={{ paddingLeft: '20px' }}>Results</h1>
+          <ul>
+            {/* this isn't working to make it longer? */}
             <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
                 <h3 className='restaurant-li-name'>Chiba Japanese</h3>
                   4.5 stars {getStars(4.5)} $10-20<br />
                   Japanese · 10435 San Diego Mission Rd, San Diego, CA 92108<br />
@@ -405,8 +453,9 @@ const MapComponent = () => {
               </div>
             </li>
             <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+                <div style={{ flexBasis: '250%', fontSize: 'calc(10px + 0.4vmin)' }}>
+                {/* not sure why this image got bigger but i had to change the flex basis 150% -> 250% */}
                 <h3 className='restaurant-li-name'>Jump Tokyo</h3>
                   4.6 stars {getStars(4.6)} $10-20<br />
                   Sushi · # R, 2311, 10450 Friars Rd, San Diego, CA 92120<br />
@@ -416,7 +465,7 @@ const MapComponent = () => {
                 </div>
                 <div>
                   <img
-                    src="https://lh3.googleusercontent.com/gps-proxy/ALd4DhHfs4iec3chtq_m6qAyel7CfUmR2-OPmnzK_fDvGjPzvPiPA8OfckB5_HBbbAFqPTA1cktHl_PjC57GZvpP2uIG9huhHzuuMJtMG3b-FpdO8hbUzvWKzWsiEkePOhy1Nb0KN2uvMNGtma7FmebR3k8SU5uZ8hYkGWy-YCQOhyLOBaBLifJwd1E=w426-h240-k-no"
+                    src="https://lh3.googleusercontent.com/proxy/hcDP2ePvORWNmW1mrpD_EX8wKvEi87fAotX6pwUo7UaPC30nSD2v-AyYnm1GjW0rAdbt4dBmAuDsEUdhSRzV-i2-W6KZBOc9GLDEJtnHNKLdDVxcjQRlBMcJ2y25rcsuYq7ZBGuDoJU-JLUL5PIoxbRD66glrcU=s680-w680-h510"
                     alt="restaurant" 
                     style={{
                       width: '100%',
@@ -428,7 +477,7 @@ const MapComponent = () => {
               </div>
             </li>
             <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
                 <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
                   <h3 className='restaurant-li-name'>Sushi Kuchi</h3>
                   4.3 stars {getStars(4.3)} $20-30<br />
@@ -450,9 +499,9 @@ const MapComponent = () => {
                 </div>
               </div>
             </li>
-            <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.5vmin)' }}>
+            <li className='restaurant-li' style={{ borderBottom: '0.1em solid #DADCE0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
                 <h3 className='restaurant-li-name'>KUMI Sushi Grill</h3>
                   4.5 stars {getStars(4.5)} $10-20<br />
                   Sushi · 4380 Kearny Mesa Rd # 300, San Diego, CA 92111<br />
@@ -473,17 +522,28 @@ const MapComponent = () => {
               </div>
             </li>
             {restaurants.map((restaurant) => (
-              <li key={restaurant.place_id} onClick={() => handleMarkerClick(restaurant)}>
-                {restaurant.name}<br />
-                {restaurant.rating} stars {getStars(restaurant.rating)} ${restaurant.minPrice}{restaurant.minPriceLevel}-{restaurant.maxPrice}{restaurant.maxPriceLevel}<br />
-                <img
-                  src={getPhotoUrl(restaurant.photos)} 
-                  alt="restaurant" 
-                  style={{
-                    width: '20%',
-                    height: 'auto',
-                  }}
-                />
+              <li key={restaurant.place_id} className='restaurant-li' onClick={() => handleMarkerClick(restaurant)} onMouseOver={() => handlePreviewMarker(restaurant)}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
+                    <h3 className='restaurant-li-name'>{restaurant.name}</h3>
+                    {restaurant.rating} stars {getStars(restaurant.rating)} ${restaurant.minPrice}{restaurant.minPriceLevel}-{restaurant.maxPrice}{restaurant.maxPriceLevel}<br />
+                    {restaurant.cuisines} · {restaurant.location}<br />
+                    {/* don't know if this works */}
+                    {restaurant.getDetails}<br />
+                    {/* need to adjust */}
+                    Dine-in · Takeout · No delivery
+                  </div>
+                </div>
+                <div>
+                  <img
+                    src={getPhotoUrl(restaurant.photos)} 
+                    alt="restaurant" 
+                    style={{
+                      width: '20%',
+                      height: 'auto',
+                    }}
+                  />
+                </div>
                 {/* restaurant address */}
                 {/* hours */}
                 {/* website */}
@@ -574,7 +634,7 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='price-dropdown-btn' onClick={() => {setIsPriceDropdownOpen(!isPriceDropdownOpen); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); }}>
+          <button className='price-dropdown-btn' onClick={() => {setIsPriceDropdownOpen(!isPriceDropdownOpen); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); setIsHoursDropdownOpen(false); }}>
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', alignContent: 'center', gap: '5px' }}>
               {pricesFilter.length === 0 ? <FaRegMoneyBillAlt style={{ fontSize: 20 }} /> : <FaCheck style={{ color: '#1F76E8' }} />}
               {pricesFilter.length === 0 ? "Prices" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{formatPriceDisplay()}</label>}
@@ -643,7 +703,7 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='rating-dropdown-btn' onClick={() => {setIsRatingDropdownOpen(!isRatingDropdownOpen); setIsPriceDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); }}>
+          <button className='rating-dropdown-btn' onClick={() => {setIsRatingDropdownOpen(!isRatingDropdownOpen); setIsPriceDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); setIsHoursDropdownOpen(false); }}>
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
               {ratingFilter === 0 ? <FaStar /> : <FaCheck style={{ color: '#1F76E8' }} />}
               {ratingFilter === 0 ? "Rating" : <label style={{ color: '#1F76E8' }}> {ratingFilter.toFixed(1)}+ <FaStar style={{ color: 'orange' }}/></label>}
@@ -721,7 +781,7 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='craving-dropdown-btn' onClick={() => {setIsCravingDropdownOpen(!isCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsAntiCravingDropdownOpen(false);}}>
+          <button className='craving-dropdown-btn' onClick={() => {setIsCravingDropdownOpen(!isCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); setIsHoursDropdownOpen(false); }}>
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
               {cravings.length === 0 ? <FaHamburger /> : <FaCheck style={{ color: '#1F76E8' }} />}
               {cravings.length === 0 ? "Cravings" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{cravings.join(', ')}</label>}
@@ -796,7 +856,7 @@ const MapComponent = () => {
           alignContent: 'center',
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
-          <button className='anti-craving-dropdown-btn' onClick={() => {setIsAntiCravingDropdownOpen(!isAntiCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false);}}>
+          <button className='anti-craving-dropdown-btn' onClick={() => {setIsAntiCravingDropdownOpen(!isAntiCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsHoursDropdownOpen(false); }}>
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
               {antiCravings.length === 0 ? <FaHamburger /> : <FaTimes style={{ color: '#E82720' }} />}
               {antiCravings.length === 0 ? "Anti-Cravings" : <label style={{ fontSize: 15, color: '#E82720' }}>{antiCravings.join(', ')}</label>}
@@ -853,13 +913,84 @@ const MapComponent = () => {
 
       {/* hours (open/closed) */}
       {/* Any time, Open now, Open 24 hours */}
+      <div className='hours-dropdown'
+          style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '53.5%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '6%',
+          height: '40px',
+          // overflowX: 'hidden',
+          // overflowY: 'hidden',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='hours-dropdown-btn' onClick={() => {setIsHoursDropdownOpen(!isHoursDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false);}}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {hoursFilter === "Any time" ? <FaClock /> : <FaCheck style={{ color: '#1F76E8' }} />}
+              {hoursFilter === "Any time" ? "Hours" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{hoursFilter}</label>}
+              {hoursFilter === "Any time" ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
+            </label>
+          </button>
+      </div>
+      {isHoursDropdownOpen && (
+          <div className='hours-dropdown-options' style={{
+            position: 'absolute',
+            zIndex: 1002,
+            top: '70px',
+            bottom: '50px',
+            left: '53.5%',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '0px',
+            width: '8%',
+            height: '135px',
+            color: 'black',
+            // paddingLeft: '20px',
+            paddingRight: '0px',
+            boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+            textAlign: 'left',
+            fontSize: 16,
+            paddingLeft: '20px',
+            paddingTop: '15px',
+          }}>
+            <div class="hours-dropdown-content" style={{ fontSize: '15px' }}>
+            {hoursOptions.map((hour) => (
+              <div key={hour} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px' }}>
+                <input
+                  type="radio"
+                  id={hour}
+                  name={hour}
+                  value={hour}
+                  checked={hoursFilter.includes(hour)}
+                  onChange={() => handleHoursSelection(hour)}
+                  style={{ height: '18px', width: '18px' }}
+                />
+                <label htmlFor={hour}>{hour}</label>
+              </div>
+            ))}
+            {/* <div style={{ display: 'flex', alignItems: 'center', gap: '40px', paddingTop: '8px' }}>
+              <button className='clear-btn' onClick={clearHoursFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+              <button className='apply-btn' onClick={applyHoursFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Apply</button>
+            </div> */}
+            <button className='clear-btn' onClick={clearHoursFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+            <button className='apply-btn' onClick={applyHoursFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Apply</button>
+          </div>
+        </div>
+      )}
 
       {/* radius (slider) */}
       <div style={{
           position: 'absolute',
           top: '10px',
           bottom: '50px',
-          left: '53.5%',
+          left: '60.25%',
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
@@ -902,7 +1033,7 @@ const MapComponent = () => {
           position: 'absolute',
           top: '10px',
           bottom: '50px',
-          left: '71.75%',
+          left: '78.5%',
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
