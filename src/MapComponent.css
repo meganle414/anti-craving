@@ -7,6 +7,10 @@ h1 {
     font-size: calc(10px + 1.25vmin);
 }
 
+.all-filters-options h3 {
+    font-weight: normal;
+}
+
 ul {
     list-style-type: none;
     width: 100%;

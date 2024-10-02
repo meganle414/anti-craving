@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
-import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock } from 'react-icons/fa';
+import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
@@ -21,7 +21,7 @@ const MapComponent = () => {
   const [ratingFilter, setRatingFilter] = useState(0);
   const [cravings, setCravings] = useState([]);
   const [antiCravings, setAntiCravings] = useState([]);
-  const [hoursFilter, setHoursFilter] = useState(["Any time"]);
+  const [hoursFilter, setHoursFilter] = useState("Any time");
 
   // whether scrolled or not on menu list
   const [isScrolled, setIsScrolled] = useState(false);
@@ -33,6 +33,7 @@ const MapComponent = () => {
   const [isAntiCravingDropdownOpen, setIsAntiCravingDropdownOpen] = useState(false);
   const [isHoursDropdownOpen, setIsHoursDropdownOpen] = useState(false);
   const [isAllFiltersOpen, setIsAllFiltersOpen] = useState(false);
+  const [isAllFiltersRatingDropdownOpen, setIsAllFiltersRatingDropdownOpen] = useState(false);
 
   const priceOptions = ['$', '$$', '$$$', '$$$$'];
   const hoursOptions = ['Any time', 'Open now', 'Open 24 hours'];
@@ -206,11 +207,13 @@ const MapComponent = () => {
   const handleAnyRating = () => {
     setRatingFilter(0); // Clears the rating filter
     setIsRatingDropdownOpen(false);
+    setIsAllFiltersRatingDropdownOpen(false);
   };
   
   const handleRatingSelection = (rating) => {
     setRatingFilter(rating); // Set rating and close dropdown
     setIsRatingDropdownOpen(false);
+    setIsAllFiltersRatingDropdownOpen(false);
   };
 
   const handleCravingSelection = (craving) => {
@@ -222,7 +225,7 @@ const MapComponent = () => {
   }
 
   const handleAnyCraving = () => {
-    setCravings([]); // Clears the cravings filter
+    setCravings([]);
     setIsCravingDropdownOpen(false);
   }
 
@@ -235,7 +238,7 @@ const MapComponent = () => {
   }
 
   const handleClearAntiCraving = () => {
-    setAntiCravings([]); // Clears the anti-cravings filter
+    setAntiCravings([]);
     setIsAntiCravingDropdownOpen(false);
   }
 
@@ -249,6 +252,31 @@ const MapComponent = () => {
 
   const applyHoursFilter = () => {
     setIsHoursDropdownOpen(false);
+  }
+
+  const handleAllFiltersClick = () => {
+    setIsAllFiltersOpen(true);
+    setIsPriceDropdownOpen(false);
+    setIsRatingDropdownOpen(false);
+    setIsCravingDropdownOpen(false);
+    setIsAntiCravingDropdownOpen(false);
+    setIsHoursDropdownOpen(false);
+    setIsScrolled(false);
+  }
+
+  const clearAllFilters = () => {
+    setPricesFilter([]);
+    setRatingFilter(0);
+    setCravings([]);
+    setAntiCravings([]);
+    setHoursFilter("Any time");
+    setRadius(4828);
+    setIsScrolled(false);
+  }
+
+  const doneAllFilters = () => {
+    setIsAllFiltersOpen(false);
+    setIsScrolled(false);
   }
 
   const getStars = (rating) => {
@@ -388,7 +416,7 @@ const MapComponent = () => {
             // paddingLeft: '10px',
             paddingRight: '10px',
             height: '92%',
-            width: '22%',
+            width: '22.5%',
             overflowY: 'auto',
             zIndex: 1000,
             color: 'black',
@@ -616,7 +644,8 @@ const MapComponent = () => {
 
       {/* Filters Overlay View */}
       {/* prices */}
-      <div className='price-dropdown'
+      {!isAllFiltersOpen && (
+        <div className='price-dropdown'
           style={{
           position: 'absolute',
           top: '10px',
@@ -638,11 +667,11 @@ const MapComponent = () => {
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', alignContent: 'center', gap: '5px' }}>
               {pricesFilter.length === 0 ? <FaRegMoneyBillAlt style={{ fontSize: 20 }} /> : <FaCheck style={{ color: '#1F76E8' }} />}
               {pricesFilter.length === 0 ? "Prices" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{formatPriceDisplay()}</label>}
-              {/* want it to be like $-$$$ instead and grab minimum value and maximum value IF CONTINOUS OR DO $$, $$$$ if NON CONTINOUS OPTIONS SELECTED */}
               {pricesFilter.length === 0 ? <FaCaretDown /> : <FaCaretDown style={{ color: '#1F76E8' }} />}
             </label>
           </button>
-      </div>
+        </div>
+      )}
       {isPriceDropdownOpen && (
         <div className='price-dropdown-options'
           style={{
@@ -678,14 +707,17 @@ const MapComponent = () => {
                 <label htmlFor={price}>{price}</label>
               </div>
             ))}
-            <button className='clear-btn' onClick={clearPriceFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
-            <button className='done-btn' onClick={donePriceFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
+              <button className='clear-btn' onClick={clearPriceFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+              <button className='done-btn' onClick={donePriceFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* rating */}
-      <div className='rating-dropdown'
+      {!isAllFiltersOpen && (
+        <div className='rating-dropdown'
           style={{
           position: 'absolute',
           top: '10px',
@@ -710,7 +742,8 @@ const MapComponent = () => {
               {ratingFilter === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
             </label>
           </button>
-      </div>
+        </div>
+      )}
       {isRatingDropdownOpen && (
           <div className='rating-dropdown-options' style={{
             position: 'absolute',
@@ -763,7 +796,8 @@ const MapComponent = () => {
 
       {/* cravings (cuisines) */}
       {/* Any cuisine, American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai */}
-      <div className='craving-dropdown'
+      {!isAllFiltersOpen && (
+        <div className='craving-dropdown'
           style={{
           position: 'absolute',
           top: '10px',
@@ -774,8 +808,6 @@ const MapComponent = () => {
           padding: '0px',
           width: '6.5%',
           height: '40px',
-          // overflowX: 'hidden',
-          // overflowY: 'hidden',
           zIndex: 1000,
           color: 'black',
           alignContent: 'center',
@@ -788,7 +820,8 @@ const MapComponent = () => {
               {cravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
             </label>
           </button>
-      </div>
+        </div>
+      )}
       {isCravingDropdownOpen && (
           <div className='craving-dropdown-options' style={{
             position: 'absolute',
@@ -838,7 +871,8 @@ const MapComponent = () => {
 
       {/* anti-cravings (cuisines) */}
       {/* American, Barbecue, Chinese, French, Hamburger, Indian, Italian, Japanese, Mexican, Pizza, Seafood, Steak, Sushi, Thai */}
-      <div className='anti-craving-dropdown'
+      {!isAllFiltersOpen && (
+        <div className='anti-craving-dropdown'
           style={{
           position: 'absolute',
           top: '10px',
@@ -863,7 +897,8 @@ const MapComponent = () => {
               {antiCravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#E82720' }}></FaCaretDown> }
             </label>
           </button>
-      </div>
+        </div>
+      )}
       {isAntiCravingDropdownOpen && (
           <div className='anti-craving-dropdown-options' style={{
             position: 'absolute',
@@ -913,7 +948,8 @@ const MapComponent = () => {
 
       {/* hours (open/closed) */}
       {/* Any time, Open now, Open 24 hours */}
-      <div className='hours-dropdown'
+      {!isAllFiltersOpen && (
+        <div className='hours-dropdown'
           style={{
           position: 'absolute',
           top: '10px',
@@ -932,13 +968,14 @@ const MapComponent = () => {
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
           <button className='hours-dropdown-btn' onClick={() => {setIsHoursDropdownOpen(!isHoursDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsAntiCravingDropdownOpen(false);}}>
-            <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'right', gap: '5px' }}>
               {hoursFilter === "Any time" ? <FaClock /> : <FaCheck style={{ color: '#1F76E8' }} />}
               {hoursFilter === "Any time" ? "Hours" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{hoursFilter}</label>}
               {hoursFilter === "Any time" ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
             </label>
           </button>
-      </div>
+        </div>
+      )}
       {isHoursDropdownOpen && (
           <div className='hours-dropdown-options' style={{
             position: 'absolute',
@@ -975,18 +1012,17 @@ const MapComponent = () => {
                 <label htmlFor={hour}>{hour}</label>
               </div>
             ))}
-            {/* <div style={{ display: 'flex', alignItems: 'center', gap: '40px', paddingTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
               <button className='clear-btn' onClick={clearHoursFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
               <button className='apply-btn' onClick={applyHoursFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Apply</button>
-            </div> */}
-            <button className='clear-btn' onClick={clearHoursFilter} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
-            <button className='apply-btn' onClick={applyHoursFilter} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Apply</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* radius (slider) */}
-      <div style={{
+      {!isAllFiltersOpen && (
+        <div style={{
           position: 'absolute',
           top: '10px',
           bottom: '50px',
@@ -1023,17 +1059,215 @@ const MapComponent = () => {
             style={{ width: '50%' }}
           />
           <label>{(radius / 1609.34).toFixed(1)} miles</label>
-      </div>
+        </div>
+      )}
 
       {/* all filters */}
-      {/* z-index 1001 to go above the restaurant list */}
+      {!isAllFiltersOpen && (
+        <div className='all-filters'
+          style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '78.5%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '6%',
+          height: '40px',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='all-filters-btn' onClick={() => {handleAllFiltersClick()}}>
+            <label style={{ fontSize: 15, display: 'flex', alignItems: 'right', gap: '5px' }}>
+              <FaSlidersH />
+              All Filters
+            </label>
+          </button>
+        </div>
+      )}
+      {isAllFiltersOpen && (
+        <div className='all-filters-options' style={{ zIndex: 1005 }}>
+          <div style={{ position: 'absolute', top: '0px', paddingLeft: '10px', zIndex: 1005, width: '23%', height: '8.5%', display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: "white", boxShadow: isScrolled ? '0 4px 2px -2px rgba(0, 0, 0, 0.3)' : 'none', borderBottom: '0.1em solid #DADCE0' }}>
+              <FaArrowLeft onClick={() => setIsAllFiltersOpen(false)} style={{ fontSize: 24 }}/>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
+                <button className='clear-btn' onClick={clearAllFilters} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+                <button className='done-btn' onClick={doneAllFilters} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Apply</button>
+              </div>
+          </div>
+          <div onScroll={handleScroll}
+            style={{
+              position: 'absolute',
+              bottom: '0px',
+              left: '0px',
+              backgroundColor: 'white',
+              paddingLeft: '30px',
+              paddingRight: '30px',
+              height: '92%',
+              width: '20.4%',
+              overflowY: 'auto',
+              zIndex: 1003,
+              color: 'black',
+              textAlign: 'left',
+            }}
+          >
+            <style>
+              {`
+                /* For WebKit browsers (Chrome, Safari, Edge) */
+                div::-webkit-scrollbar {
+                  width: 6px; /* Slim scrollbar width */
+                }
+                div::-webkit-scrollbar-track {
+                  background: transparent; /* Background of the track */
+                }
+                div::-webkit-scrollbar-thumb {
+                  background-color: gray; /* Scrollbar color */
+                  border-radius: 10px;     /* Rounded edges */
+                }
+                div::-webkit-scrollbar-thumb:hover {
+                  background-color: darkgray; /* Darker on hover */
+                }
+                div::-webkit-scrollbar-button {
+                  display: none; /* Remove scrollbar arrows/buttons */
+                }
+
+                /* For Firefox */
+                div {
+                  scrollbar-width: thin;
+                  scrollbar-color: gray lightgray;
+                }
+
+                /* Hides scrollbar arrows on Firefox */
+                div::-webkit-scrollbar-button {
+                  display: none;
+                }
+              `}
+            </style>
+            <h3>Price</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {priceOptions.map((price) => (
+                <div
+                  key={price}
+                  onClick={() => handlePriceSelection(price)}
+                  style={{
+                    padding: '10px 10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '2px',
+                    backgroundColor: pricesFilter.includes(price) ? '#1E76E8' : 'white',
+                    color: pricesFilter.includes(price) ? 'white' : '#202124',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease',
+                    textAlign: 'center',
+                    flex: '1',  // Ensures all boxes are equal width
+                  }}
+                >
+                  {price}
+                </div>
+              ))}
+            </div>
+
+            <h3>Rating at least</h3>
+            <div>
+              <button className='all-filters-rating-dropdown-btn' style={{ border: '0.1em solid #ccc', borderRadius: '2px', height: '35px' }} onClick={() => {setIsAllFiltersRatingDropdownOpen(!isAllFiltersRatingDropdownOpen); }}>
+                <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  {ratingFilter === 0 ? "Any rating": <label>{ratingFilter.toFixed(1)} {getStars(ratingFilter)}</label>}
+                  <FaCaretDown />
+                </label>
+              </button>
+              {isAllFiltersRatingDropdownOpen && (
+                <div className='all-filters-rating-dropdown-options' style={{
+                  position: 'absolute',
+                  zIndex: 1002,
+                  top: '160px',
+                  bottom: '50px',
+                  left: '5%',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  padding: '0px',
+                  width: '40%',
+                  height: '295px',
+                  color: 'black',
+                  paddingRight: '0px',
+                  boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                  textAlign: 'left',
+                }}>
+                  <div style={{ backgroundColor: 'transparent' }}>
+                    <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', marginBottom: '15px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: 'transparent' }}>
+                      <label style={{ fontSize: 15, backgroundColor: 'transparent' }}>Any rating</label>
+                    </button>
+                  </div>
+                  {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5].map((rating) => (
+                    <div key={rating} style={{ paddingLeft: '20px', backgroundColor: ratingFilter === rating ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }}>
+                      <button
+                        id={`${rating}-stars`}
+                        name="rating"
+                        value={rating}
+                        onClick={() => handleRatingSelection(rating)}
+                        style={{
+                          width: '100%',
+                          height: '10px',
+                          border: 'none',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 'transparent',
+                        }}
+                      />
+                      <label htmlFor={`${rating}-stars`}>
+                        {`${rating.toFixed(1)} stars`} {getStars(rating)}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <h3>Hours</h3>
+            <div>
+
+            </div>
+
+            <h3>Cravings</h3>
+            <div>
+
+            </div>
+
+            <h3>Anti-Cravings</h3>
+            <div>
+
+            </div>
+
+            <h3>Distance</h3>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                id="radius-slider"
+                type="range"
+                min="0.5"
+                max="10"
+                value={(radius / 1609.34).toFixed(1)}
+                step="0.5"
+                onChange={(e) => {
+                  const miles = parseFloat(e.target.value); // Get the slider value in miles
+                  const meters = miles * 1609.34; // Convert miles to meters
+                  setRadius(meters);
+                }}
+                onMouseUp={() => updateCircle(location)}
+                style={{ width: '80%' }}
+              />
+              <label>{(radius / 1609.34).toFixed(1)} miles</label>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* re-center */}
       <div style={{
           position: 'absolute',
           top: '10px',
           bottom: '50px',
-          left: '78.5%',
+          left: '85.25%',
           backgroundColor: 'white',
           borderRadius: '8px',
           padding: '0px',
@@ -1047,7 +1281,7 @@ const MapComponent = () => {
           boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
         }}>
           <button className='re-center-btn' onClick={handleRecenterClick} style={{ display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '5px', marginRight: '5px' }}>
-            <img src='https://cdn3.iconfinder.com/data/icons/glypho-travel/64/gps-position-target-512.png' alt='re-center-target' width={20}></img> 
+            <img src='https://cdn3.iconfinder.com/data/icons/glypho-travel/64/gps-position-target-512.png' alt='re-center-target' width={20}></img>
             <label>Re-center</label>
           </button>
       </div>
