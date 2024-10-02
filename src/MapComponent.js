@@ -1263,7 +1263,8 @@ const MapComponent = () => {
       )}
 
       {/* re-center */}
-      <div style={{
+      {!isAllFiltersOpen && (
+        <div style={{
           position: 'absolute',
           top: '10px',
           bottom: '50px',
@@ -1285,6 +1286,7 @@ const MapComponent = () => {
             <label>Re-center</label>
           </button>
       </div>
+      )}
     </div>
     
   );
