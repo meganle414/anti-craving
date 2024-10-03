@@ -9,6 +9,8 @@ h1 {
 
 .all-filters-options h3 {
     font-weight: normal;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 ul {
@@ -38,4 +40,8 @@ ul {
 button {
     border: none;
     background-color: white;
+}
+
+.all-filters-option {
+    margin-bottom: 10px;
 }

@@ -1094,7 +1094,7 @@ const MapComponent = () => {
               <FaArrowLeft onClick={() => setIsAllFiltersOpen(false)} style={{ fontSize: 24 }}/>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
                 <button className='clear-btn' onClick={clearAllFilters} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
-                <button className='done-btn' onClick={doneAllFilters} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Apply</button>
+                <button className='done-btn' onClick={doneAllFilters} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
               </div>
           </div>
           <div onScroll={handleScroll}
@@ -1145,118 +1145,185 @@ const MapComponent = () => {
                 }
               `}
             </style>
-            <h3>Price</h3>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              {priceOptions.map((price) => (
-                <div
-                  key={price}
-                  onClick={() => handlePriceSelection(price)}
-                  style={{
-                    padding: '10px 10px',
-                    border: '1px solid #ccc',
-                    borderRadius: '2px',
-                    backgroundColor: pricesFilter.includes(price) ? '#1E76E8' : 'white',
-                    color: pricesFilter.includes(price) ? 'white' : '#202124',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s ease',
-                    textAlign: 'center',
-                    flex: '1',  // Ensures all boxes are equal width
-                  }}
-                >
-                  {price}
+            <div className='all-filters-option' style={{ paddingTop: '10px' }}>
+              <h3>Price</h3>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {priceOptions.map((price) => (
+                  <div
+                    key={price}
+                    onClick={() => handlePriceSelection(price)}
+                    style={{
+                      padding: '10px 10px',
+                      border: '1px solid #ccc',
+                      borderRadius: '2px',
+                      backgroundColor: pricesFilter.includes(price) ? '#1E76E8' : 'white',
+                      color: pricesFilter.includes(price) ? 'white' : '#202124',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease',
+                      textAlign: 'center',
+                      flex: '1',  // Ensures all boxes are equal width
+                    }}
+                  >
+                    {price}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className='all-filters-option'>
+              <h3>Rating at least</h3>
+              <div>
+                <button className='all-filters-rating-dropdown-btn' style={{ border: '0.1em solid #ccc', borderRadius: '2px', height: '38px', paddingLeft: '15px', paddingRight: '15px' }} onClick={() => {setIsAllFiltersRatingDropdownOpen(!isAllFiltersRatingDropdownOpen); }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: 15 }}>
+                    {ratingFilter === 0 ? "Any rating": <label>{ratingFilter.toFixed(1)} {getStars(ratingFilter)}</label>}
+                    <FaCaretDown />
+                  </label>
+                </button>
+                {isAllFiltersRatingDropdownOpen && (
+                  <div className='all-filters-rating-dropdown-options' style={{
+                    position: 'absolute',
+                    zIndex: 1002,
+                    top: '160px',
+                    bottom: '50px',
+                    left: '5%',
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    padding: '0px',
+                    width: '40%',
+                    height: '295px',
+                    color: 'black',
+                    paddingRight: '0px',
+                    boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{ backgroundColor: 'transparent' }}>
+                      <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', marginBottom: '15px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: 'transparent' }}>
+                        <label style={{ fontSize: 15, backgroundColor: 'transparent' }}>Any rating</label>
+                      </button>
+                    </div>
+                    {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5].map((rating) => (
+                      <div key={rating} style={{ paddingLeft: '20px', backgroundColor: ratingFilter === rating ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }}>
+                        <button
+                          id={`${rating}-stars`}
+                          name="rating"
+                          value={rating}
+                          onClick={() => handleRatingSelection(rating)}
+                          style={{
+                            width: '100%',
+                            height: '10px',
+                            border: 'none',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: 'transparent',
+                          }}
+                        />
+                        <label htmlFor={`${rating}-stars`}>
+                          {`${rating.toFixed(1)} stars`} {getStars(rating)}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className='all-filters-option'>
+              <h3>Hours</h3>
+              <div class="all-filters-hours-option-content" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', fontSize: '15px' }}>
+              {hoursOptions.map((hour) => (
+                <div key={hour} style={{ flex: '1' }}>
+                  <div
+                    key={hour}
+                    onClick={() => handleHoursSelection(hour)}
+                    style={{
+                      padding: '10px 10px',
+                      border: '1px solid #ccc',
+                      borderRadius: '2px',
+                      backgroundColor: hoursFilter === hour ? '#1E76E8' : 'white',
+                      color: hoursFilter === hour ? 'white' : '#202124',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {hour}
+                  </div>
                 </div>
               ))}
+              </div>
             </div>
 
-            <h3>Rating at least</h3>
-            <div>
-              <button className='all-filters-rating-dropdown-btn' style={{ border: '0.1em solid #ccc', borderRadius: '2px', height: '35px' }} onClick={() => {setIsAllFiltersRatingDropdownOpen(!isAllFiltersRatingDropdownOpen); }}>
-                <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  {ratingFilter === 0 ? "Any rating": <label>{ratingFilter.toFixed(1)} {getStars(ratingFilter)}</label>}
-                  <FaCaretDown />
-                </label>
-              </button>
-              {isAllFiltersRatingDropdownOpen && (
-                <div className='all-filters-rating-dropdown-options' style={{
-                  position: 'absolute',
-                  zIndex: 1002,
-                  top: '160px',
-                  bottom: '50px',
-                  left: '5%',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  padding: '0px',
-                  width: '40%',
-                  height: '295px',
-                  color: 'black',
-                  paddingRight: '0px',
-                  boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
-                  textAlign: 'left',
-                }}>
-                  <div style={{ backgroundColor: 'transparent' }}>
-                    <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', marginBottom: '15px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: 'transparent' }}>
-                      <label style={{ fontSize: 15, backgroundColor: 'transparent' }}>Any rating</label>
-                    </button>
+            <div className='all-filters-option'>
+              <h3>Distance</h3>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <input
+                  id="radius-slider"
+                  type="range"
+                  min="0.5"
+                  max="10"
+                  value={(radius / 1609.34).toFixed(1)}
+                  step="0.5"
+                  onChange={(e) => {
+                    const miles = parseFloat(e.target.value); // Get the slider value in miles
+                    const meters = miles * 1609.34; // Convert miles to meters
+                    setRadius(meters);
+                  }}
+                  onMouseUp={() => updateCircle(location)}
+                  style={{ width: '75%' }}
+                />
+                <label>{(radius / 1609.34).toFixed(1)} miles</label>
+              </div>
+            </div>
+
+            <div className='all-filters-option'>
+              <div style={{ display: 'flex', alignItems: 'center', alignContent: 'center', justifyContent: 'space-between' }}>
+                <h3>Cravings</h3>
+                <button className='clear-btn' onClick={handleAnyCraving} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+              </div>
+              <div style={{ alignContent: 'center', alignItems: 'center', fontSize: 15 }}>
+                {["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"].map((craving) => (
+                  <div key={craving} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '5px', paddingBottom: '5px' }} >
+                    <input
+                    type="checkbox"
+                    id={craving}
+                    name={craving}
+                    value={craving}
+                    checked={cravings.includes(craving)}
+                    onChange={() => handleCravingSelection(craving)}
+                    style={{ height: '18px', width: '18px' }}
+                  />
+                    <label htmlFor={`${craving}`} style={{  }}>
+                      {`${craving}`}
+                    </label>
                   </div>
-                  {[2.0, 2.5, 3.0, 3.5, 4.0, 4.5].map((rating) => (
-                    <div key={rating} style={{ paddingLeft: '20px', backgroundColor: ratingFilter === rating ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }}>
-                      <button
-                        id={`${rating}-stars`}
-                        name="rating"
-                        value={rating}
-                        onClick={() => handleRatingSelection(rating)}
-                        style={{
-                          width: '100%',
-                          height: '10px',
-                          border: 'none',
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          backgroundColor: 'transparent',
-                        }}
-                      />
-                      <label htmlFor={`${rating}-stars`}>
-                        {`${rating.toFixed(1)} stars`} {getStars(rating)}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
+                ))}
+              </div> 
             </div>
 
-            <h3>Hours</h3>
-            <div>
-
-            </div>
-
-            <h3>Cravings</h3>
-            <div>
-
-            </div>
-
-            <h3>Anti-Cravings</h3>
-            <div>
-
-            </div>
-
-            <h3>Distance</h3>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                id="radius-slider"
-                type="range"
-                min="0.5"
-                max="10"
-                value={(radius / 1609.34).toFixed(1)}
-                step="0.5"
-                onChange={(e) => {
-                  const miles = parseFloat(e.target.value); // Get the slider value in miles
-                  const meters = miles * 1609.34; // Convert miles to meters
-                  setRadius(meters);
-                }}
-                onMouseUp={() => updateCircle(location)}
-                style={{ width: '80%' }}
-              />
-              <label>{(radius / 1609.34).toFixed(1)} miles</label>
+            <div className='all-filters-option'>
+              <div style={{ display: 'flex', alignItems: 'center', alignContent: 'center', justifyContent: 'space-between' }}>
+                <h3>Anti-Cravings</h3>
+                <button className='clear-btn' onClick={handleClearAntiCraving} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+              </div>
+              <div style={{ alignContent: 'center', alignItems: 'center', fontSize: 15 }}>
+                {["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"].map((antiCraving) => (
+                  <div key={antiCraving} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '5px', paddingBottom: '5px' }} >
+                    <input
+                    type="checkbox"
+                    id={antiCraving}
+                    name={antiCraving}
+                    value={antiCraving}
+                    checked={antiCravings.includes(antiCraving)}
+                    onChange={() => handleAntiCravingSelection(antiCraving)}
+                    style={{ height: '18px', width: '18px' }}
+                  />
+                    <label htmlFor={`${antiCraving}`} style={{  }}>
+                      {`${antiCraving}`}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
