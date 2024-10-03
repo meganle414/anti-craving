@@ -54,15 +54,22 @@ const MapComponent = () => {
 
     service.nearbySearch(request, (results, status) => {
       if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-        setRestaurants(results);
+        if (filters.type === 'anti-craving') {
+          setAntiRestaurants(results);
+        }
+        const filteredRestaurants = results.filter(restaurant =>
+          !antiCravings.includes(restaurant.types.find(type => cravings.includes(type)))
+        );
+        setRestaurants(filteredRestaurants);
       }
     });
   };
 
   useEffect(() => {
-    if (map) {
+    if (map) {      
+      fetchRestaurants({ type: 'craving', cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
+      fetchRestaurants({ type: 'anti-craving', cuisines: ['pizza'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
       updateLocationMarker(location);
-      // fetchRestaurants({ cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
     }
   }, [map, location, cravings, antiCravings]);
 
@@ -308,66 +315,72 @@ const MapComponent = () => {
   return (
     <div className="Map" style={{ position: 'relative', height: '735px', width: '100%' }}>
       <LoadScript googleMapsApiKey="AIzaSyBmbwB277k3onIGaeJkRrBz9E2jnrXLeLc" libraries={["places"]} >
-      {/* Search Bar for Address Lookup with Autocomplete */}
-      <div style={{ position: 'absolute', zIndex: 1001, width: '23%', height: '8%', backgroundColor: "white", boxShadow: isScrolled ? '0 4px 2px -2px rgba(0, 0, 0, 0.3)' : 'none' }}>
-        <div className="Address-search" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1001, width: '85%' }}>
-          <Autocomplete
-            onLoad={(autocomplete) => {
-                autocompleteRef.current = autocomplete;
-            }}
-            onPlaceChanged={handlePlaceChanged}
-          >
-            <input
-              type="text"
-              placeholder="Enter an address"
-              style={{ width: '100%', padding: '10px 10px 10px 30px', borderRadius: '50px', border: '1px solid #ccc' }}
-            />
-          </Autocomplete>
+        {/* Search Bar for Address Lookup with Autocomplete */}
+        <div style={{ position: 'absolute', zIndex: 1001, width: '23%', height: '8%', backgroundColor: "white", boxShadow: isScrolled ? '0 4px 2px -2px rgba(0, 0, 0, 0.3)' : 'none' }}>
+          <div className="Address-search" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1001, width: '85%' }}>
+            <Autocomplete
+              onLoad={(autocomplete) => {
+                  autocompleteRef.current = autocomplete;
+              }}
+              onPlaceChanged={handlePlaceChanged}
+            >
+              <input
+                type="text"
+                placeholder="Enter an address"
+                style={{ width: '100%', padding: '10px 10px 10px 30px', borderRadius: '50px', border: '1px solid #ccc' }}
+              />
+            </Autocomplete>
+          </div>
+          <button onClick={selectFirstSuggestion} style={{ marginLeft: '8px', padding: '5px 10px', borderRadius: '5px', zIndex: 1002 }}>
+            <FaSearch style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', color: 'gray' }} />
+          </button>
         </div>
-        <button onClick={selectFirstSuggestion} style={{ marginLeft: '8px', padding: '5px 10px', borderRadius: '5px', zIndex: 1002 }}>
-          <FaSearch style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', color: 'gray' }} />
-        </button>
-      </div>
-      <GoogleMap
-        center={location}
-        zoom={12}
-        mapContainerStyle={{ height: '100%', width: '100%' }}
-        onLoad={map => {
-          setMap(map);
-          setLocation(location);
-          map.setCenter(location);
-          updateLocationMarker(location);
-          if (navigator?.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              ({ coords: { latitude: lat, longitude: lng } }) => {
-                const pos = { lat, lng };
-                setLocation(pos);
-              },
-              (error) => {
-                if (error.code === error.PERMISSION_DENIED) {
-                  console.log('Permission denied, prompt user again.');
-                } else {
-                  console.error('Error getting location', error);
-                }
-              },
-              { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-            );
-          }
-        }}
-        options={{
-          streetViewControl: false,
-          fullscreenControl: false,
-          styles: [
-            { featureType: "poi", stylers: [{ visibility: "off" }]}, // Disable points of interest
-            { featureType: "transit", stylers: [{ visibility: "off" }]}, // Disable transit stations
-            { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }]}, // Disable road icons
-          ],
-        }}
-        >
-        {/* Restaurant Markers */}
-        {restaurants.map((restaurant) => (
-          <React.Fragment key={restaurant.place_id}>
+        <GoogleMap
+          center={location}
+          zoom={12}
+          mapContainerStyle={{ height: '100%', width: '100%' }}
+          onLoad={map => {
+            setMap(map);
+            setLocation(location);
+            map.setCenter(location);
+            updateLocationMarker(location);
+            if (navigator?.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                ({ coords: { latitude: lat, longitude: lng } }) => {
+                  const pos = { lat, lng };
+                  setLocation(pos);
+                },
+                (error) => {
+                  if (error.code === error.PERMISSION_DENIED) {
+                    console.log('Permission denied, prompt user again.');
+                  } else {
+                    console.error('Error getting location', error);
+                  }
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+              );
+            }
+          }}
+          options={{
+            streetViewControl: false,
+            fullscreenControl: false,
+            styles: [
+              { featureType: "poi", stylers: [{ visibility: "off" }]}, // Disable points of interest
+              { featureType: "transit", stylers: [{ visibility: "off" }]}, // Disable transit stations
+              { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }]}, // Disable road icons
+            ],
+          }}
+          >
+          {/* Restaurant Markers */}
+          {restaurants.map((restaurant) => (
             <Marker
+              label={{
+                className: 'marker-label',
+                text: restaurant.name,
+                fontSize: 'calc(5px + 0.9vmin)',
+                fontWeight: 'bold',
+                color: (selectedRestaurant === restaurant || previewRestaurant === restaurant) ? 'red' : 'black',
+              }}
               position={{
                 lat: restaurant.geometry.location.lat(),
                 lng: restaurant.geometry.location.lng(),
@@ -383,26 +396,11 @@ const MapComponent = () => {
                 scaledSize: (selectedRestaurant === restaurant || previewRestaurant === restaurant)
                   ? new window.google.maps.Size(45, 45)  // Larger size for selected/previewed restaurant
                   : new window.google.maps.Size(30, 30), // Smaller size for unselected restaurants
+                labelOrigin: new window.google.maps.Point(15, -10),
               }}
             />
-            {/* Restaurant Name */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '-10px',
-                left: '40px', // Shift the label to the right of the marker. May need to adjust more
-                backgroundColor: 'transparent',
-                padding: '0px',
-                fontSize: '14px',
-                whiteSpace: 'nowrap',
-                fontWeight: 'bold',
-              }}
-            >
-              {restaurant.name}
-            </div>
-          </React.Fragment>
-        ))}
-      </GoogleMap>
+          ))}
+        </GoogleMap>
       </LoadScript>
 
       {/* Overlay List View */}
