@@ -51,29 +51,69 @@ const MapComponent = () => {
       maxPriceLevel: filters.maxPrice,
       rating: filters.rating,
     };
-
+  
     service.nearbySearch(request, (results, status) => {
       if (status === window.google.maps.places.PlacesServiceStatus.OK) {
         if (filters.type === 'anti-craving') {
           setAntiRestaurants(results);
         }
+        
         const filteredRestaurants = results.filter(restaurant =>
           !antiCravings.includes(restaurant.types.find(type => cravings.includes(type)))
         );
-        setRestaurants(filteredRestaurants);
+  
+        // Create an array to hold promises for getDetails calls
+        const detailsPromises = filteredRestaurants.map((restaurant) => {
+          const detailsRequest = {
+            placeId: restaurant.place_id,
+            fields: [
+              // 'name',
+              // 'rating',
+              'user_ratings_total', // reviews count
+              // 'price_level',
+              'formatted_phone_number', // phone number
+              'opening_hours', // opening hours
+              'website', // website link
+            ]
+          };
+  
+          return new Promise((resolve, reject) => {
+            service.getDetails(detailsRequest, (place, detailsStatus) => {
+              if (detailsStatus === window.google.maps.places.PlacesServiceStatus.OK) {
+                // Combine the restaurant data with the details
+                const combinedData = { ...restaurant, ...place };
+                resolve(combinedData);
+              } else {
+                reject(detailsStatus);
+              }
+            });
+          });
+        });
+  
+        // Wait for all getDetails calls to complete
+        Promise.all(detailsPromises)
+          .then(combinedRestaurants => {
+            // Set the combined restaurants data directly
+            setRestaurants(combinedRestaurants);
+          })
+          .catch(error => {
+            console.error('Error fetching restaurant details:', error);
+          });
       }
     });
   };
+  
 
   useEffect(() => {
     if (map) {      
       fetchRestaurants({ type: 'craving', cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
       fetchRestaurants({ type: 'anti-craving', cuisines: ['pizza'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
+      // const minPrice = pricesFilter.length === 0 ? 1 : pricesFilter[0];
+      // fetchRestaurants({ type: 'craving', cuisines: cravings, openNow: true, rating: 4, minPrice: minPrice, maxPrice: pricesFilter[pricesFilter.length - 1] });
+      // fetchRestaurants({ type: 'anti-craving', cuisines: antiCravings, openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
       updateLocationMarker(location);
     }
   }, [map, location, cravings, antiCravings]);
-
-  
 
   const handleMarkerClick = (restaurant) => {
     setSelectedRestaurant(restaurant);
@@ -411,7 +451,6 @@ const MapComponent = () => {
             bottom: '0px',
             left: '0px',
             backgroundColor: 'white',
-            // paddingLeft: '10px',
             paddingRight: '10px',
             height: '92%',
             width: '22.5%',
@@ -455,126 +494,40 @@ const MapComponent = () => {
           </style>
           <h1 style={{ paddingLeft: '20px' }}>Results</h1>
           <ul>
-            {/* this isn't working to make it longer? */}
-            <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
-                <h3 className='restaurant-li-name'>Chiba Japanese</h3>
-                  4.5 stars {getStars(4.5)} $10-20<br />
-                  Japanese · 10435 San Diego Mission Rd, San Diego, CA 92108<br />
-                  Casual spot for sushi & noodles<br />
-                  Open · Closes 9 PM
-                </div>
-                <div>
-                  <img
-                    src="https://lh5.googleusercontent.com/p/AF1QipPhRqDxqTti3lsofIQZvPhbS0h5-mb13Vgtguoe=w426-h240-k-no"
-                    alt="restaurant" 
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      borderRadius: '12px',
-                    }}
-                  />
-                </div>
-              </div>
-            </li>
-            <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                <div style={{ flexBasis: '250%', fontSize: 'calc(10px + 0.4vmin)' }}>
-                {/* not sure why this image got bigger but i had to change the flex basis 150% -> 250% */}
-                <h3 className='restaurant-li-name'>Jump Tokyo</h3>
-                  4.6 stars {getStars(4.6)} $10-20<br />
-                  Sushi · # R, 2311, 10450 Friars Rd, San Diego, CA 92120<br />
-                  Unassuming Japanese eatery & sushi bar<br />
-                  Open · Closes 9 PM<br />
-                  Dine-in · Takeout · No delivery
-                </div>
-                <div>
-                  <img
-                    src="https://lh3.googleusercontent.com/proxy/hcDP2ePvORWNmW1mrpD_EX8wKvEi87fAotX6pwUo7UaPC30nSD2v-AyYnm1GjW0rAdbt4dBmAuDsEUdhSRzV-i2-W6KZBOc9GLDEJtnHNKLdDVxcjQRlBMcJ2y25rcsuYq7ZBGuDoJU-JLUL5PIoxbRD66glrcU=s680-w680-h510"
-                    alt="restaurant" 
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      borderRadius: '12px'
-                    }}
-                  />
-                </div>
-              </div>
-            </li>
-            <li className='restaurant-li'>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
-                  <h3 className='restaurant-li-name'>Sushi Kuchi</h3>
-                  4.3 stars {getStars(4.3)} $20-30<br />
-                  Sushi · 2408 Northside Dr, San Diego, CA 92108<br />
-                  Casual spot for sushi & teriyaki<br />
-                  Open · Closes 9:15<br />
-                  Dine-in · Takeout · No delivery
-                </div>
-                <div>
-                  <img
-                    src="https://lh5.googleusercontent.com/p/AF1QipN2TnzDFtG1zwBtvsHScMWbVizfexSzfp74syo=w408-h263-k-no"
-                    alt="restaurant" 
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      borderRadius: '12px'
-                    }}
-                  />
-                </div>
-              </div>
-            </li>
-            <li className='restaurant-li' style={{ borderBottom: '0.1em solid #DADCE0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
-                <h3 className='restaurant-li-name'>KUMI Sushi Grill</h3>
-                  4.5 stars {getStars(4.5)} $10-20<br />
-                  Sushi · 4380 Kearny Mesa Rd # 300, San Diego, CA 92111<br />
-                  Open · Closes 9:15<br />
-                  Dine-in · Takeout · No delivery
-                </div>
-                <div>
-                  <img
-                    src="https://lh5.googleusercontent.com/p/AF1QipMUNbqtQXvZcBeLZY0Wvfep7ECo7dahY1l54mr_=w408-h271-k-no"
-                    alt="restaurant" 
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      borderRadius: '12px'
-                    }}
-                  />
-                </div>
-              </div>
-            </li>
             {restaurants.map((restaurant) => (
               <li key={restaurant.place_id} className='restaurant-li' onClick={() => handleMarkerClick(restaurant)} onMouseOver={() => handlePreviewMarker(restaurant)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
-                    <h3 className='restaurant-li-name'>{restaurant.name}</h3>
-                    {restaurant.rating} stars {getStars(restaurant.rating)} ${restaurant.minPrice}{restaurant.minPriceLevel}-{restaurant.maxPrice}{restaurant.maxPriceLevel}<br />
-                    {restaurant.cuisines} · {restaurant.location}<br />
-                    {/* don't know if this works */}
-                    {restaurant.getDetails}<br />
-                    {/* need to adjust */}
-                    Dine-in · Takeout · No delivery
+                <div className='restaurant-card' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className='restaurant-details' style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
+                    <h3 className='restaurant-li-name' style={{ marginTop: '10px' }}>{restaurant.name}</h3>
+                    {restaurant.rating} stars {getStars(restaurant.rating)} ({restaurant.user_ratings_total}) {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
+                    {restaurant.vicinity}<br />
+                    <span style={{ color: restaurant.opening_hours?.isOpen() ? 'green' : 'red' }}>
+                      {restaurant.opening_hours?.isOpen() ? 'Open' : 'Closed'}
+                    </span><br />
+                    {restaurant.opening_hours?.dine_in ? 'Dine-in · ' : ''}
+                    {restaurant.opening_hours?.takeout ? 'Takeout · ' : ''}
+                    {restaurant.opening_hours?.delivery ? 'Delivery' : 'No delivery'}<br />
+                  </div>
+                  <div className='restaurant-image'>
+                    <img
+                      src={getPhotoUrl(restaurant.photos)} 
+                      alt="restaurant" 
+                      style={{
+                        width: '150px',
+                        height: '100px',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        borderRadius: '12px',
+                        marginTop: '20px'
+                      }}
+                    />
                   </div>
                 </div>
-                <div>
-                  <img
-                    src={getPhotoUrl(restaurant.photos)} 
-                    alt="restaurant" 
-                    style={{
-                      width: '20%',
-                      height: 'auto',
-                    }}
-                  />
-                </div>
-                {/* restaurant address */}
-                {/* hours */}
-                {/* website */}
-                {/* number */}
-                {/* order online, check wait time, reserve a table */}
+                {restaurant.website ? 
+                    <div style={{ marginTop: '10px', borderRadius: '15px', border: '0.1em solid #1B6EF3', width: '100%', height: '30px', alignContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                      <a href={restaurant.website} target="_blank" rel="noopener noreferrer" style={{ color: '#1B6EF3', paddingLeft: '5px', paddingRight: '5px' }}>Website</a><br /> 
+                    </div>
+                    : <br />}
               </li>
             ))}
           </ul>
@@ -634,7 +587,7 @@ const MapComponent = () => {
             )}
             <h3>{selectedRestaurant.name}</h3>
             <p>{selectedRestaurant.vicinity}</p>
-            <p>{selectedRestaurant.rating} stars ${selectedRestaurant.minPrice}{selectedRestaurant.minPriceLevel}-{selectedRestaurant.maxPrice}{selectedRestaurant.maxPriceLevel}</p>
+            <p>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
             {/* Add more details as needed */}
           </div>
         </div>
