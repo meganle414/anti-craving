@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
-import { FaSearch, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft } from 'react-icons/fa';
+import { FaSearch, FaMapMarkerAlt, FaGlobeEurope, FaPhone, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft, FaRandom } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
@@ -59,7 +59,8 @@ const MapComponent = () => {
         }
         
         const filteredRestaurants = results.filter(restaurant =>
-          !antiCravings.includes(restaurant.types.find(type => cravings.includes(type)))
+          // !antiCravings.includes(restaurant.types.find(type => cravings.includes(type)))
+          !restaurant.types.some(type => antiCravings.includes(type))
         );
   
         // Create an array to hold promises for getDetails calls
@@ -67,10 +68,7 @@ const MapComponent = () => {
           const detailsRequest = {
             placeId: restaurant.place_id,
             fields: [
-              // 'name',
-              // 'rating',
               'user_ratings_total', // reviews count
-              // 'price_level',
               'formatted_phone_number', // phone number
               'opening_hours', // opening hours
               'website', // website link
@@ -325,6 +323,10 @@ const MapComponent = () => {
     setIsAllFiltersOpen(false);
     setIsScrolled(false);
   }
+  
+  const handleRandomRestaurant = () => {
+    setSelectedRestaurant(restaurants[Math.floor(Math.random() * restaurants.length)]);
+  }
 
   const getStars = (rating) => {
     const stars = [];
@@ -501,12 +503,12 @@ const MapComponent = () => {
                     <h3 className='restaurant-li-name' style={{ marginTop: '10px' }}>{restaurant.name}</h3>
                     {restaurant.rating} stars {getStars(restaurant.rating)} ({restaurant.user_ratings_total}) {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
                     {restaurant.vicinity}<br />
-                    <span style={{ color: restaurant.opening_hours?.isOpen() ? 'green' : 'red' }}>
-                      {restaurant.opening_hours?.isOpen() ? 'Open' : 'Closed'}
+                    <span style={{ color: restaurant.opening_hours.open_now ? 'green' : 'red' }}>
+                      {restaurant.opening_hours.open_now ? 'Open' : 'Closed'}
                     </span><br />
-                    {restaurant.opening_hours?.dine_in ? 'Dine-in · ' : ''}
-                    {restaurant.opening_hours?.takeout ? 'Takeout · ' : ''}
-                    {restaurant.opening_hours?.delivery ? 'Delivery' : 'No delivery'}<br />
+                    {/* {restaurant.opening_hours.dine_in ? 'Dine-in · ' : ''}
+                    {restaurant.opening_hours.takeout ? 'Takeout · ' : ''}
+                    {restaurant.opening_hours.delivery ? 'Delivery' : 'No delivery'}<br /> */}
                   </div>
                   <div className='restaurant-image'>
                     <img
@@ -551,6 +553,38 @@ const MapComponent = () => {
           zIndex: 1000,
           color: 'black',
         }}>
+          <style>
+            {`
+              /* For WebKit browsers (Chrome, Safari, Edge) */
+              div::-webkit-scrollbar {
+                width: 6px; /* Slim scrollbar width */
+              }
+              div::-webkit-scrollbar-track {
+                background: transparent; /* Background of the track */
+              }
+              div::-webkit-scrollbar-thumb {
+                background-color: gray; /* Scrollbar color */
+                border-radius: 10px;     /* Rounded edges */
+              }
+              div::-webkit-scrollbar-thumb:hover {
+                background-color: darkgray; /* Darker on hover */
+              }
+              div::-webkit-scrollbar-button {
+                display: none; /* Remove scrollbar arrows/buttons */
+              }
+
+              /* For Firefox */
+              div {
+                scrollbar-width: thin;
+                scrollbar-color: gray lightgray;
+              }
+
+              /* Hides scrollbar arrows on Firefox */
+              div::-webkit-scrollbar-button {
+                display: none;
+              }
+            `}
+          </style>
           <button onClick={() => setSelectedRestaurant(null)}
             style={{ 
               background: 'white', 
@@ -579,16 +613,47 @@ const MapComponent = () => {
               alt="selected restaurant" 
               style={{
                   width: '100%',
-                  height: 'auto',
+                  height: '250px',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
                   borderTopLeftRadius: '8px',
                   borderTopRightRadius: '8px',
                 }}
               />
             )}
-            <h3>{selectedRestaurant.name}</h3>
-            <p>{selectedRestaurant.vicinity}</p>
-            <p>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
-            {/* Add more details as needed */}
+            <h3 style={{ display: 'flex', textAlign: 'left', marginLeft: '40px' }}>{selectedRestaurant.name}</h3>
+            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'center', marginLeft: '40px' }}>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
+            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'center', marginLeft: '40px' }}><FaMapMarkerAlt style={{ color: '#1B6EF3' }} />{selectedRestaurant.vicinity}</p>
+            <span style={{ color: selectedRestaurant.opening_hours.open_now ? 'green' : 'red', display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px' }}>
+              <FaClock style={{ color: '#1B6EF3' }} />
+              {selectedRestaurant.opening_hours.open_now ? 'Open' : 'Closed'}
+            </span>
+            {selectedRestaurant.opening_hours.weekday_text ? (
+              <div style={{ textAlign: 'left', marginLeft: '68px'}}>
+                <ul>
+                  {selectedRestaurant.opening_hours.weekday_text.map((day, index) => (
+                    <li key={index}>{day}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p>Hours not available</p>
+            )}
+            {selectedRestaurant.website ? 
+              <div>
+                <div style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px', color: 'black' }}>
+                  <FaGlobeEurope style={{ color: '#1B6EF3', flexShrink: 0 }} /><a href={selectedRestaurant.website} target="_blank" rel="noopener noreferrer" style={{ color: '#1B6EF3', maxWidth: '300px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{selectedRestaurant.website}</a><br /> 
+                </div><br />
+              </div>
+              : ''
+            }
+            {selectedRestaurant.formatted_phone_number ?
+              <div style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'center', marginLeft: '40px', marginBottom: '20px' }}>
+                <FaPhone style={{ color: '#1B6EF3' }} />{selectedRestaurant.formatted_phone_number}<br />
+              </div>
+            : <br />
+            }
+            {/* {selectedRestaurant.opening_hours.periods} */}
           </div>
         </div>
       )}
@@ -708,12 +773,9 @@ const MapComponent = () => {
             width: '9.5%',
             height: '295px',
             color: 'black',
-            // paddingLeft: '20px',
             paddingRight: '0px',
             boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
             textAlign: 'left',
-            // alignContent: 'center',
-            // alignItems: 'center',
           }}>
             <div style={{ backgroundColor: 'transparent' }}>
               <button onClick={handleAnyRating} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', marginBottom: '15px', paddingLeft: '20px', paddingRight: '20px', backgroundColor: 'transparent' }}>
@@ -766,9 +828,9 @@ const MapComponent = () => {
         }}>
           <button className='craving-dropdown-btn' onClick={() => {setIsCravingDropdownOpen(!isCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsAntiCravingDropdownOpen(false); setIsHoursDropdownOpen(false); }}>
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
-              {cravings.length === 0 ? <FaHamburger /> : <FaCheck style={{ color: '#1F76E8' }} />}
+              {cravings.length === 0 ? <FaHamburger /> : <FaCheck style={{ color: '#1F76E8', flexShrink: 0 }} />}
               {cravings.length === 0 ? "Cravings" : <label style={{ fontSize: 15, color: '#1F76E8' }}>{cravings.join(', ')}</label>}
-              {cravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8' }}></FaCaretDown> }
+              {cravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#1F76E8', flexShrink: 0 }}></FaCaretDown> }
             </label>
           </button>
         </div>
@@ -786,7 +848,6 @@ const MapComponent = () => {
             width: '8.5%',
             height: '615px',
             color: 'black',
-            // paddingLeft: '20px',
             paddingRight: '0px',
             boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
             textAlign: 'left',
@@ -834,8 +895,6 @@ const MapComponent = () => {
           padding: '0px',
           width: '8%',
           height: '40px',
-          // overflowX: 'hidden',
-          // overflowY: 'hidden',
           zIndex: 1000,
           color: 'black',
           alignContent: 'center',
@@ -843,9 +902,9 @@ const MapComponent = () => {
         }}>
           <button className='anti-craving-dropdown-btn' onClick={() => {setIsAntiCravingDropdownOpen(!isAntiCravingDropdownOpen); setIsPriceDropdownOpen(false); setIsRatingDropdownOpen(false); setIsCravingDropdownOpen(false); setIsHoursDropdownOpen(false); }}>
             <label style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: '5px' }}>
-              {antiCravings.length === 0 ? <FaHamburger /> : <FaTimes style={{ color: '#E82720' }} />}
+              {antiCravings.length === 0 ? <FaHamburger /> : <FaTimes style={{ color: '#E82720', flexShrink: 0 }} />}
               {antiCravings.length === 0 ? "Anti-Cravings" : <label style={{ fontSize: 15, color: '#E82720' }}>{antiCravings.join(', ')}</label>}
-              {antiCravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#E82720' }}></FaCaretDown> }
+              {antiCravings.length === 0 ? <FaCaretDown ></FaCaretDown> : <FaCaretDown style={{ color: '#E82720', flexShrink: 0 }}></FaCaretDown> }
             </label>
           </button>
         </div>
@@ -863,7 +922,6 @@ const MapComponent = () => {
             width: '8.5%',
             height: '615px',
             color: 'black',
-            // paddingLeft: '20px',
             paddingRight: '0px',
             boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
             textAlign: 'left',
@@ -1305,8 +1363,33 @@ const MapComponent = () => {
           </button>
       </div>
       )}
+
+      {/* random */}
+      {!isAllFiltersOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          bottom: '50px',
+          left: '91.5%',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '0px',
+          width: '5.5%',
+          height: '40px',
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          zIndex: 1000,
+          color: 'black',
+          alignContent: 'center',
+          boxShadow: '0px 8px 16px 0px rgba(0,0,0,0.2)',
+        }}>
+          <button className='random-btn' onClick={handleRandomRestaurant} style={{ display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '5px', marginRight: '5px' }}>
+            <FaRandom />
+            <label>Random</label>
+          </button>
+      </div>
+      )}
     </div>
-    
   );
 };
 
