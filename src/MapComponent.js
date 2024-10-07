@@ -520,18 +520,18 @@ const MapComponent = () => {
                   <div className='restaurant-details' style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
                     <h3 className='restaurant-li-name' style={{ marginTop: '10px' }}>{restaurant.name}</h3>
                     {restaurant.rating} stars {getStars(restaurant.rating)} ({restaurant.user_ratings_total}) {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
-                    {restaurant.wheelchair_accessible_entrance && (
+                    {/* {restaurant.wheelchair_accessible_entrance && (
                     <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
                       <FaWheelchair style={{ color: '#1B6EF3' }} /> · 
                     </p>
-                    )}
+                    )} */}
                     {restaurant.vicinity}<br />
                     <span style={{ color: restaurant.opening_hours.open_now ? 'green' : 'red' }}>
                       {restaurant.opening_hours.open_now ? 'Open' : 'Closed'}
                     </span><br />
-                    {restaurant.dine_in ? 'Dine-in · ' : ''}
+                    {/* {restaurant.dine_in ? 'Dine-in · ' : ''}
                     {restaurant.takeout ? 'Takeout · ' : ''}
-                    {restaurant.delivery ? 'Delivery' : ''}<br />
+                    {restaurant.delivery ? 'Delivery' : ''}<br /> */}
                   </div>
                   <div className='restaurant-image'>
                     <img
@@ -647,7 +647,7 @@ const MapComponent = () => {
             )}
             <h3 style={{ display: 'flex', textAlign: 'left', marginLeft: '40px' }}>{selectedRestaurant.name}</h3>
             <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
-            {selectedRestaurant.wheelchair_accessible_entrance && (
+            {/* {selectedRestaurant.wheelchair_accessible_entrance && (
               <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
                 <FaWheelchair style={{ color: '#1B6EF3' }} /> · 
               </p>
@@ -666,7 +666,7 @@ const MapComponent = () => {
               <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
                 <FaCheck style={{ color: 'green' }}/>Delivery
               </p>
-            )}
+            )} */}
             <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
               <FaMapMarkerAlt style={{ color: '#1B6EF3' }} />{selectedRestaurant.vicinity}
             </p>
