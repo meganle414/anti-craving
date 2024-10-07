@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
-import { FaSearch, FaMapMarkerAlt, FaGlobeEurope, FaPhone, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft, FaRandom } from 'react-icons/fa';
+import { FaSearch, FaMapMarkerAlt, FaWheelchair, FaGlobeEurope, FaPhone, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft, FaRandom } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
@@ -60,7 +60,8 @@ const MapComponent = () => {
         
         const filteredRestaurants = results.filter(restaurant =>
           // !antiCravings.includes(restaurant.types.find(type => cravings.includes(type)))
-          !restaurant.types.some(type => antiCravings.includes(type))
+          // !restaurant.types.some(type => antiCravings.includes(type))
+          !antiRestaurants.some(anti => anti.place_id === restaurant.place_id)
         );
   
         // Create an array to hold promises for getDetails calls
@@ -72,6 +73,10 @@ const MapComponent = () => {
               'formatted_phone_number', // phone number
               'opening_hours', // opening hours
               'website', // website link
+              // 'wheelchair_accessible_entrance',  // costs EXTRA
+              // 'dine_in', // costs EXTRA
+              // 'takeout', // costs EXTRA
+              // 'delivery', // costs EXTRA
             ]
           };
   
@@ -91,6 +96,12 @@ const MapComponent = () => {
         // Wait for all getDetails calls to complete
         Promise.all(detailsPromises)
           .then(combinedRestaurants => {
+            // Filter out restaurants that are in antiRestaurants by comparing place_id
+            // const updatedRestaurants = combinedRestaurants.filter(
+            //   restaurant => !antiRestaurants.some(anti => anti.place_id === restaurant.place_id)
+            // );
+            // // Now set the restaurants
+            // setRestaurants(updatedRestaurants);
             // Set the combined restaurants data directly
             setRestaurants(combinedRestaurants);
           })
@@ -104,11 +115,11 @@ const MapComponent = () => {
 
   useEffect(() => {
     if (map) {      
-      fetchRestaurants({ type: 'craving', cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
-      fetchRestaurants({ type: 'anti-craving', cuisines: ['pizza'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
-      // const minPrice = pricesFilter.length === 0 ? 1 : pricesFilter[0];
-      // fetchRestaurants({ type: 'craving', cuisines: cravings, openNow: true, rating: 4, minPrice: minPrice, maxPrice: pricesFilter[pricesFilter.length - 1] });
-      // fetchRestaurants({ type: 'anti-craving', cuisines: antiCravings, openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
+      // fetchRestaurants({ type: 'craving', cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
+      // fetchRestaurants({ type: 'anti-craving', cuisines: ['pizza'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
+      const minPrice = pricesFilter.length === 0 ? 1 : pricesFilter[0];
+      fetchRestaurants({ type: 'craving', cuisines: cravings, openNow: {hourFilterOpen}, rating: 4, minPrice: minPrice, maxPrice: pricesFilter[pricesFilter.length - 1] });
+      fetchRestaurants({ type: 'anti-craving', cuisines: antiCravings, openNow: {hourFilterOpen}, rating: 4, minPrice: 1, maxPrice: 4 });
       updateLocationMarker(location);
     }
   }, [map, location, cravings, antiCravings]);
@@ -289,6 +300,13 @@ const MapComponent = () => {
 
   const handleHoursSelection = (hour) => {
     setHoursFilter(hour);
+  }
+
+  const hourFilterOpen = () => {
+    if (hoursFilter === "Any time") {
+      return true;
+    }
+    return false;
   }
 
   const clearHoursFilter = () => {
@@ -502,13 +520,18 @@ const MapComponent = () => {
                   <div className='restaurant-details' style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
                     <h3 className='restaurant-li-name' style={{ marginTop: '10px' }}>{restaurant.name}</h3>
                     {restaurant.rating} stars {getStars(restaurant.rating)} ({restaurant.user_ratings_total}) {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
+                    {restaurant.wheelchair_accessible_entrance && (
+                    <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
+                      <FaWheelchair style={{ color: '#1B6EF3' }} /> · 
+                    </p>
+                    )}
                     {restaurant.vicinity}<br />
                     <span style={{ color: restaurant.opening_hours.open_now ? 'green' : 'red' }}>
                       {restaurant.opening_hours.open_now ? 'Open' : 'Closed'}
                     </span><br />
-                    {/* {restaurant.opening_hours.dine_in ? 'Dine-in · ' : ''}
-                    {restaurant.opening_hours.takeout ? 'Takeout · ' : ''}
-                    {restaurant.opening_hours.delivery ? 'Delivery' : 'No delivery'}<br /> */}
+                    {restaurant.dine_in ? 'Dine-in · ' : ''}
+                    {restaurant.takeout ? 'Takeout · ' : ''}
+                    {restaurant.delivery ? 'Delivery' : ''}<br />
                   </div>
                   <div className='restaurant-image'>
                     <img
@@ -526,10 +549,11 @@ const MapComponent = () => {
                   </div>
                 </div>
                 {restaurant.website ? 
-                    <div style={{ marginTop: '10px', borderRadius: '15px', border: '0.1em solid #1B6EF3', width: '100%', height: '30px', alignContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-                      <a href={restaurant.website} target="_blank" rel="noopener noreferrer" style={{ color: '#1B6EF3', paddingLeft: '5px', paddingRight: '5px' }}>Website</a><br /> 
-                    </div>
-                    : <br />}
+                  <div style={{ marginTop: '10px', borderRadius: '15px', border: '0.1em solid #1B6EF3', width: '100%', height: '30px', alignContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                    <a href={restaurant.website} target="_blank" rel="noopener noreferrer" style={{ color: '#1B6EF3', paddingLeft: '5px', paddingRight: '5px' }}>Website</a><br /> 
+                  </div>
+                  : <br />
+                }
               </li>
             ))}
           </ul>
@@ -622,8 +646,30 @@ const MapComponent = () => {
               />
             )}
             <h3 style={{ display: 'flex', textAlign: 'left', marginLeft: '40px' }}>{selectedRestaurant.name}</h3>
-            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'center', marginLeft: '40px' }}>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
-            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'center', marginLeft: '40px' }}><FaMapMarkerAlt style={{ color: '#1B6EF3' }} />{selectedRestaurant.vicinity}</p>
+            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
+            {selectedRestaurant.wheelchair_accessible_entrance && (
+              <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
+                <FaWheelchair style={{ color: '#1B6EF3' }} /> · 
+              </p>
+            )}
+            {selectedRestaurant.dine_in && (
+              <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
+                <FaCheck style={{ color: 'green' }}/>Dine-in
+              </p>
+            )}
+            {selectedRestaurant.takeout && (
+              <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
+                <FaCheck style={{ color: 'green' }}/>Takeout
+              </p>
+            )}
+            {selectedRestaurant.delivery && (
+              <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
+                <FaCheck style={{ color: 'green' }}/>Delivery
+              </p>
+            )}
+            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
+              <FaMapMarkerAlt style={{ color: '#1B6EF3' }} />{selectedRestaurant.vicinity}
+            </p>
             <span style={{ color: selectedRestaurant.opening_hours.open_now ? 'green' : 'red', display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px' }}>
               <FaClock style={{ color: '#1B6EF3' }} />
               {selectedRestaurant.opening_hours.open_now ? 'Open' : 'Closed'}
@@ -653,7 +699,6 @@ const MapComponent = () => {
               </div>
             : <br />
             }
-            {/* {selectedRestaurant.opening_hours.periods} */}
           </div>
         </div>
       )}
@@ -1007,7 +1052,8 @@ const MapComponent = () => {
             paddingTop: '15px',
           }}>
             <div class="hours-dropdown-content" style={{ fontSize: '15px' }}>
-            {hoursOptions.map((hour) => (
+            {/* {hoursOptions.map((hour) => ( */}
+            {["Any time", "Open now"].map((hour) => (
               <div key={hour} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px' }}>
                 <input
                   type="radio"
@@ -1240,7 +1286,8 @@ const MapComponent = () => {
             <div className='all-filters-option'>
               <h3>Hours</h3>
               <div class="all-filters-hours-option-content" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', fontSize: '15px' }}>
-              {hoursOptions.map((hour) => (
+              {/* {hoursOptions.map((hour) => ( */}
+              {["Any time", "Open now"].map((hour) => (
                 <div key={hour} style={{ flex: '1' }}>
                   <div
                     key={hour}
