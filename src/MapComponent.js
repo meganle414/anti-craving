@@ -136,12 +136,12 @@ const MapComponent = () => {
         // Store anti-cravings results separately
         if (filters.type === 'anti-craving') {
           setAntiRestaurants(results);
-        } else {
+          console.log(`Anti restaurants set ${antiRestaurants}`);
+        } else {  // if craving instead
           const detailsPromises = results.map((restaurant) => {
             const detailsRequest = {
               placeId: restaurant.place_id,
               fields: [
-                'user_ratings_total', // reviews count
                 'formatted_phone_number', // phone number
                 'opening_hours', // opening hours
                 'website', // website link
@@ -163,10 +163,7 @@ const MapComponent = () => {
           // Wait for all getDetails calls to complete
           Promise.all(detailsPromises)
             .then((combinedRestaurants) => {
-              setRestaurants((prevRestaurants) => [
-                ...prevRestaurants,
-                ...combinedRestaurants,
-              ]); // Append new cravings restaurants to the list
+              setRestaurants(combinedRestaurants);
             })
             .catch((error) => {
               console.error('Error fetching restaurant details:', error);
@@ -179,13 +176,12 @@ const MapComponent = () => {
   // Filter out anti-cravings from the cravings restaurants
   useEffect(() => {
     if (antiRestaurants.length > 0) {
+      // Filter out anti-craving restaurants
       const filteredRestaurants = restaurants.filter(
-        (restaurant) =>
-          !antiRestaurants.some(
-            (anti) => anti.place_id === restaurant.place_id
-          )
+        (restaurant) => !antiRestaurants.some((anti) => anti.place_id === restaurant.place_id)
       );
-      setRestaurants(filteredRestaurants); // Set only after anti-cravings are applied
+      
+      setRestaurants(filteredRestaurants);
     }
   }, [antiRestaurants]); // Trigger filtering only when antiRestaurants changes
   
@@ -193,6 +189,15 @@ const MapComponent = () => {
     if (map) {
       const minPrice = pricesFilter.length === 0 ? 1 : pricesFilter[0];
       const maxPrice = pricesFilter.length === 0 ? 4: pricesFilter[pricesFilter.length - 1];
+      fetchRestaurants({
+        type: 'anti-craving',
+        cuisines: antiCravings,
+        openNow: { hourFilterOpen },
+        rating: 4,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+      });
+      
       fetchRestaurants({
         type: 'craving',
         cuisines: cravings,
@@ -202,15 +207,7 @@ const MapComponent = () => {
         maxPrice: maxPrice,
       });
   
-      // Fetch anti-cravings separately without overwriting the cravings list
-      fetchRestaurants({
-        type: 'anti-craving',
-        cuisines: antiCravings,
-        openNow: { hourFilterOpen },
-        rating: 4,
-        minPrice: minPrice,
-        maxPrice: maxPrice,
-      });
+      
   
       updateLocationMarker(location);
     }
@@ -283,30 +280,6 @@ const MapComponent = () => {
 
     setCurrentCircle(newCircle);
     // need to refetch restaurants in this area
-  };
-
-  const selectFirstSuggestion = () => {
-    const autocompleteService = new window.google.maps.places.AutocompleteService();
-    const inputValue = autocompleteRef.current.input.value;
-
-    autocompleteService.getPlacePredictions({ input: inputValue }, (predictions, status) => {
-      if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions.length) {
-        const firstPrediction = predictions[0];
-        const placeService = new window.google.maps.places.PlacesService(map);
-        
-        placeService.getDetails({ placeId: firstPrediction.place_id }, (placeDetails) => {
-          if (placeDetails && placeDetails.geometry) {
-            const newLocation = {
-              lat: placeDetails.geometry.location.lat(),
-              lng: placeDetails.geometry.location.lng(),
-            };
-            setLocation(newLocation);
-            map.setCenter(newLocation);
-            updateLocationMarker(newLocation);
-          }
-        });
-      }
-    });
   };
 
   const handleScroll = (event) => {
@@ -484,9 +457,6 @@ const MapComponent = () => {
               />
             </Autocomplete>
           </div>
-          <button onClick={selectFirstSuggestion} style={{ marginLeft: '8px', padding: '5px 10px', borderRadius: '5px', zIndex: 1002 }}>
-            <FaSearch style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', color: 'gray' }} />
-          </button>
         </div>
         <GoogleMap
           center={location}
@@ -612,10 +582,10 @@ const MapComponent = () => {
                 <div className='restaurant-card' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className='restaurant-details' style={{ flexBasis: '150%', fontSize: 'calc(10px + 0.4vmin)' }}>
                     <h3 className='restaurant-li-name' style={{ marginTop: '10px' }}>{restaurant.name}</h3>
-                    {restaurant.rating} stars {getStars(restaurant.rating)} ({restaurant.user_ratings_total}) {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
+                    {restaurant.rating} stars {getStars(restaurant.rating)} {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
                     {restaurant.vicinity}<br />
-                    <span style={{ color: restaurant.opening_hours.open_now ? 'green' : 'red' }}>
-                      {restaurant.opening_hours.open_now ? 'Open' : 'Closed'}
+                    <span style={{ color: restaurant.opening_hours.isOpen() ? 'green' : 'red' }}>
+                      {restaurant.opening_hours.isOpen() ? 'Open' : 'Closed'}
                     </span><br />
                   </div>
                   <div className='restaurant-image'>
@@ -731,16 +701,16 @@ const MapComponent = () => {
               />
             )}
             <h3 style={{ display: 'flex', textAlign: 'left', marginLeft: '40px' }}>{selectedRestaurant.name}</h3>
-            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} ({selectedRestaurant.user_ratings_total}) {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
+            <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>{selectedRestaurant.rating} stars {getStars(selectedRestaurant.rating)} {selectedRestaurant.price_level ? `· ${'$'.repeat(selectedRestaurant.price_level)}` : ''}</p>
             <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
               <FaMapMarkerAlt style={{ color: '#1B6EF3' }} />{selectedRestaurant.vicinity}
             </p>
-            <span style={{ color: selectedRestaurant.opening_hours.open_now ? 'green' : 'red', display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px' }}>
+            <span style={{ color: selectedRestaurant.opening_hours.isOpen() ? 'green' : 'red', display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px' }}>
               <FaClock style={{ color: '#1B6EF3' }} />
-              {selectedRestaurant.opening_hours.open_now ? 'Open' : 'Closed'}
+              {selectedRestaurant.opening_hours.isOpen() ? 'Open' : 'Closed'}
             </span>
             {selectedRestaurant.opening_hours.weekday_text ? (
-              <div style={{ textAlign: 'left', marginLeft: '68px'}}>
+              <div style={{ textAlign: 'left', marginLeft: '68px' }}>
                 <ul>
                   {selectedRestaurant.opening_hours.weekday_text.map((day, index) => (
                     <li key={index}>{day}</li>
