@@ -584,8 +584,8 @@ const MapComponent = () => {
                     <h3 className='restaurant-li-name' style={{ marginTop: '10px' }}>{restaurant.name}</h3>
                     {restaurant.rating} stars {getStars(restaurant.rating)} {restaurant.price_level ? `· ${'$'.repeat(restaurant.price_level)}` : ''}<br />
                     {restaurant.vicinity}<br />
-                    <span style={{ color: restaurant.opening_hours.isOpen() ? 'green' : 'red' }}>
-                      {restaurant.opening_hours.isOpen() ? 'Open' : 'Closed'}
+                    <span style={{ color: restaurant.opening_hours.open_now ? 'green' : 'red' }}>
+                      {restaurant.opening_hours.open_now ? 'Open' : 'Closed'}
                     </span><br />
                   </div>
                   <div className='restaurant-image'>
@@ -705,9 +705,9 @@ const MapComponent = () => {
             <p style={{ display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', marginLeft: '40px' }}>
               <FaMapMarkerAlt style={{ color: '#1B6EF3' }} />{selectedRestaurant.vicinity}
             </p>
-            <span style={{ color: selectedRestaurant.opening_hours.isOpen() ? 'green' : 'red', display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px' }}>
+            <span style={{ color: selectedRestaurant.opening_hours.open_now ? 'green' : 'red', display: 'flex', gap: '10px', alignContent: 'center', alignItems: 'center', textAlign: 'left', marginLeft: '40px' }}>
               <FaClock style={{ color: '#1B6EF3' }} />
-              {selectedRestaurant.opening_hours.isOpen() ? 'Open' : 'Closed'}
+              {selectedRestaurant.opening_hours.open_now ? 'Open' : 'Closed'}
             </span>
             {selectedRestaurant.opening_hours.weekday_text ? (
               <div style={{ textAlign: 'left', marginLeft: '68px' }}>
