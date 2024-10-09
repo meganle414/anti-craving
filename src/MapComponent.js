@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
-import { FaSearch, FaMapMarkerAlt, FaGlobeEurope, FaPhone, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft, FaRandom } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaGlobeEurope, FaPhone, FaCaretDown, FaCheck, FaRegMoneyBillAlt, FaStar, FaStarHalfAlt, FaHamburger, FaTimes, FaClock, FaSlidersH, FaArrowLeft, FaRandom } from 'react-icons/fa';
 import './MapComponent.css';
 
 const MapComponent = () => {
@@ -17,13 +17,6 @@ const MapComponent = () => {
   // filter options (data)
   const [restaurants, setRestaurants] = useState([]);
   const [antiRestaurants, setAntiRestaurants] = useState([]);
-  // const [restaurants, setRestaurants] = useState([
-  //   { place_id: '100', type: 'sushi', name: 'Sushi Kuchi' },
-  //   { place_id: '101', name: 'A Brooklyn Pizzeria' },
-  // ]);
-  // const [antiRestaurants, setAntiRestaurants] = useState([
-  //   { place_id: '101', type: 'pizza', name: 'A Brooklyn Pizzeria' },
-  // ]);
   const [pricesFilter, setPricesFilter] = useState([]);
   const [ratingFilter, setRatingFilter] = useState(0);
   const [cravings, setCravings] = useState([]);
@@ -32,6 +25,11 @@ const MapComponent = () => {
 
   // whether scrolled or not on menu list
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const [pricesChangeConfirmed, setPricesChangeConfirmed] = useState(false);
+  const [cravingsChangeConfirmed, setCravingsChangeConfirmed] = useState(false);
+  const [antiCravingsChangeConfirmed, setAntiCravingsChangeConfirmed] = useState(false);
+  const [radiusChangeConfirmed, setRadiusChangeConfirmed] = useState(false);
 
   // dropdown/filter option choices
   const [isPriceDropdownOpen, setIsPriceDropdownOpen] = useState(false);
@@ -42,81 +40,10 @@ const MapComponent = () => {
   const [isAllFiltersOpen, setIsAllFiltersOpen] = useState(false);
   const [isAllFiltersRatingDropdownOpen, setIsAllFiltersRatingDropdownOpen] = useState(false);
 
+  const cuisines = ["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"];
   const priceOptions = ['$', '$$', '$$$', '$$$$'];
   const hoursOptions = ['Any time', 'Open now'];
   const autocompleteRef = useRef(null);
-
-  // const fetchRestaurants = (filters) => {
-  //   const service = new window.google.maps.places.PlacesService(map);
-  //   const request = {
-  //     location,
-  //     radius,
-  //     type: ['restaurant'],
-  //     keyword: filters.cuisines.join(','),
-  //     openNow: filters.openNow,
-  //     minPriceLevel: filters.minPrice,
-  //     maxPriceLevel: filters.maxPrice,
-  //     rating: filters.rating,
-  //   };
-  
-  //   service.nearbySearch(request, (results, status) => {
-  //     if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-  //       if (filters.type === 'anti-craving') {
-  //         setAntiRestaurants(results);
-  //       }
-        
-  //       const filteredRestaurants = results.filter(restaurant =>
-  //         !antiRestaurants.some(anti => anti.place_id === restaurant.place_id)
-  //       );
-  
-  //       // Create an array to hold promises for getDetails calls
-  //       const detailsPromises = filteredRestaurants.map((restaurant) => {
-  //         const detailsRequest = {
-  //           placeId: restaurant.place_id,
-  //           fields: [
-  //             'user_ratings_total', // reviews count
-  //             'formatted_phone_number', // phone number
-  //             'opening_hours', // opening hours
-  //             'website', // website link
-  //           ]
-  //         };
-  
-  //         return new Promise((resolve, reject) => {
-  //           service.getDetails(detailsRequest, (place, detailsStatus) => {
-  //             if (detailsStatus === window.google.maps.places.PlacesServiceStatus.OK) {
-  //               // Combine the restaurant data with the details
-  //               const combinedData = { ...restaurant, ...place };
-  //               resolve(combinedData);
-  //             } else {
-  //               reject(detailsStatus);
-  //             }
-  //           });
-  //         });
-  //       });
-  
-  //       // Wait for all getDetails calls to complete
-  //       Promise.all(detailsPromises)
-  //         .then(combinedRestaurants => {
-  //           // Set the combined restaurants data directly
-  //           setRestaurants(combinedRestaurants);
-  //         })
-  //         .catch(error => {
-  //           console.error('Error fetching restaurant details:', error);
-  //         });
-  //     }
-  //   });
-  // };
-  
-  // useEffect(() => {
-  //   if (map) {      
-  //     // fetchRestaurants({ type: 'craving', cuisines: ['sushi'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
-  //     // fetchRestaurants({ type: 'anti-craving', cuisines: ['pizza'], openNow: true, rating: 4, minPrice: 1, maxPrice: 4 });
-  //     const minPrice = pricesFilter.length === 0 ? 1 : pricesFilter[0];
-  //     fetchRestaurants({ type: 'craving', cuisines: cravings, openNow: {hourFilterOpen}, rating: 4, minPrice: minPrice, maxPrice: (pricesFilter.length === 0 ? 4 : pricesFilter[pricesFilter.length - 1])});
-  //     fetchRestaurants({ type: 'anti-craving', cuisines: antiCravings, openNow: {hourFilterOpen}, rating: 4, minPrice: 1, maxPrice: (pricesFilter.length === 0 ? 4 : pricesFilter[pricesFilter.length - 1])});
-  //     updateLocationMarker(location);
-  //   }
-  // }, [map, location, cravings, antiCravings]);
 
   const fetchRestaurants = (filters) => {
     const service = new window.google.maps.places.PlacesService(map);
@@ -133,12 +60,14 @@ const MapComponent = () => {
   
     service.nearbySearch(request, (results, status) => {
       if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+        // Filter by rating after fetching
+        const filteredResults = results.filter(restaurant => restaurant.rating >= filters.rating);
+
         // Store anti-cravings results separately
         if (filters.type === 'anti-craving') {
-          setAntiRestaurants(results);
-          console.log(`Anti restaurants set ${antiRestaurants}`);
+          setAntiRestaurants(filteredResults);
         } else {  // if craving instead
-          const detailsPromises = results.map((restaurant) => {
+          const detailsPromises = filteredResults.map((restaurant) => {
             const detailsRequest = {
               placeId: restaurant.place_id,
               fields: [
@@ -186,14 +115,20 @@ const MapComponent = () => {
   }, [antiRestaurants]); // Trigger filtering only when antiRestaurants changes
   
   useEffect(() => {
-    if (map) {
-      const minPrice = pricesFilter.length === 0 ? 1 : pricesFilter[0];
-      const maxPrice = pricesFilter.length === 0 ? 4: pricesFilter[pricesFilter.length - 1];
+    // only fetch if a change is applied
+    if (map && (cravingsChangeConfirmed || antiCravingsChangeConfirmed || radiusChangeConfirmed)) {
+      const minPrice = pricesFilter.length === 0 ? 1 : mapPriceToGoogle(pricesFilter[0]);
+      const maxPrice = pricesFilter.length === 0 ? 4: mapPriceToGoogle(pricesFilter[pricesFilter.length - 1]);
+
+      // comment out later
+      console.log('Min price', minPrice);
+      console.log('Max price', maxPrice);
+
       fetchRestaurants({
         type: 'anti-craving',
         cuisines: antiCravings,
         openNow: { hourFilterOpen },
-        rating: 4,
+        rating: ratingFilter,
         minPrice: minPrice,
         maxPrice: maxPrice,
       });
@@ -202,17 +137,33 @@ const MapComponent = () => {
         type: 'craving',
         cuisines: cravings,
         openNow: { hourFilterOpen },
-        rating: 4,
+        rating: ratingFilter,
         minPrice: minPrice,
         maxPrice: maxPrice,
       });
   
-      
-  
       updateLocationMarker(location);
+      setPricesChangeConfirmed(false);
+      setCravingsChangeConfirmed(false);
+      setAntiCravingsChangeConfirmed(false);
+      setRadiusChangeConfirmed(false);
     }
-  }, [map, location, cravings, antiCravings]);
+  }, [map, location, pricesChangeConfirmed, ratingFilter, cravingsChangeConfirmed, antiCravingsChangeConfirmed, radiusChangeConfirmed]); // removed cravings, anti-cravings, prices filter
   
+  const mapPriceToGoogle = (price) => {
+    switch (price) {
+        case '$':
+            return '1';
+        case '$$':
+            return '2';
+        case '$$$':
+            return '3';
+        case '$$$$':
+            return '4';
+        default:
+            return '0';
+    }
+};
 
   const handleMarkerClick = (restaurant) => {
     setSelectedRestaurant(restaurant);
@@ -292,6 +243,9 @@ const MapComponent = () => {
   }
   
   const handlePriceSelection = (price) => {
+    console.log('Price selected:', price);
+    console.log('Current pricesFilter:', pricesFilter);
+
     let updatedPrices;
     if (pricesFilter.includes(price)) {
       updatedPrices = pricesFilter.filter(p => p !== price); // Deselect price
@@ -301,6 +255,7 @@ const MapComponent = () => {
 
     // Sort prices based on the order of priceOptions
     updatedPrices.sort((a, b) => priceOptions.indexOf(a) - priceOptions.indexOf(b));
+    console.log('Updated pricesFilter:', updatedPrices);
     setPricesFilter(updatedPrices);
   };
 
@@ -324,6 +279,7 @@ const MapComponent = () => {
 
   const donePriceFilter = () => {
     setIsPriceDropdownOpen(false);
+    setPricesChangeConfirmed(true);
   };
 
   const handleAnyRating = () => {
@@ -349,6 +305,7 @@ const MapComponent = () => {
   const handleAnyCraving = () => {
     setCravings([]);
     setIsCravingDropdownOpen(false);
+    setCravingsChangeConfirmed(true);
   }
 
   const handleAntiCravingSelection = (antiCraving) => {
@@ -362,6 +319,7 @@ const MapComponent = () => {
   const handleClearAntiCraving = () => {
     setAntiCravings([]);
     setIsAntiCravingDropdownOpen(false);
+    setAntiCravingsChangeConfirmed(true);
   }
 
   const handleHoursSelection = (hour) => {
@@ -382,6 +340,17 @@ const MapComponent = () => {
   const applyHoursFilter = () => {
     setIsHoursDropdownOpen(false);
   }
+
+  const handleRadiusChange = (e) => {
+    const miles = parseFloat(e.target.value); // Get the slider value in miles
+    const meters = miles * 1609.34; // Convert miles to meters
+    setRadius(meters); // Set the radius state
+    setRadiusChangeConfirmed(false); // Prevent re-fetching on radius change
+  };
+  
+  const handleRadiusChangeConfirmed = () => {
+    setRadiusChangeConfirmed(true); // Trigger re-fetch after radius change is finalized
+  };
 
   const handleAllFiltersClick = () => {
     setIsAllFiltersOpen(true);
@@ -788,7 +757,7 @@ const MapComponent = () => {
           paddingTop: '15px',
           fontSize: '16px',
         }}>
-          <div class="price-dropdown-content">
+          <div className="price-dropdown-content">
             {priceOptions.map((price) => (
               <div key={price} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px'  }}>
                 <input
@@ -936,7 +905,7 @@ const MapComponent = () => {
             <button onClick={handleAnyCraving} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', paddingLeft: '20px', marginBottom: '15px', backgroundColor: 'transparent' }}>
               <label style={{ fontSize: 15 }}>Any cuisine</label>
             </button>
-            {["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"].map((craving) => (
+            {cuisines.map((craving) => (
               <div key={craving} style={{ paddingLeft: '20px', backgroundColor: cravings.includes(craving) ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }} >
                 <button
                   id={`${craving}`}
@@ -958,6 +927,11 @@ const MapComponent = () => {
                 </label>
               </div>
             ))}
+            {/* recently added, might be buggy */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
+              <button className='clear-btn' onClick={handleAnyCraving} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+              <button className='done-btn' onClick={setCravingsChangeConfirmed(true)} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
+            </div>
           </div>
         )}
 
@@ -1010,7 +984,7 @@ const MapComponent = () => {
             <button onClick={handleClearAntiCraving} style={{ width: '100%', height: '10px', border: 'none', textAlign: 'left', marginTop: '20px', paddingLeft: '20px', marginBottom: '15px', backgroundColor: 'transparent' }}>
               <label style={{ fontSize: 15 }}>Clear</label>
             </button>
-            {["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"].map((antiCraving) => (
+            {cuisines.map((antiCraving) => (
               <div key={antiCraving} style={{ paddingLeft: '20px', backgroundColor: antiCravings.includes(antiCraving) ? '#D2E1FF' : 'transparent', paddingBottom: '10px' }} >
                 <button
                   id={`${antiCraving}`}
@@ -1032,6 +1006,11 @@ const MapComponent = () => {
                 </label>
               </div>
             ))}
+            {/* recently added, might be buggy */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
+              <button className='clear-btn' onClick={handleClearAntiCraving} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+              <button className='done-btn' onClick={setAntiCravingsChangeConfirmed(true)} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
+            </div>
           </div>
         )}
 
@@ -1083,7 +1062,7 @@ const MapComponent = () => {
             paddingLeft: '20px',
             paddingTop: '15px',
           }}>
-            <div class="hours-dropdown-content" style={{ fontSize: '15px' }}>
+            <div className="hours-dropdown-content" style={{ fontSize: '15px' }}>
             {hoursOptions.map((hour) => (
               <div key={hour} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '10px' }}>
                 <input
@@ -1136,12 +1115,8 @@ const MapComponent = () => {
             max="10"
             value={(radius / 1609.34).toFixed(1)}
             step="0.5"
-            onChange={(e) => {
-              const miles = parseFloat(e.target.value); // Get the slider value in miles
-              const meters = miles * 1609.34; // Convert miles to meters
-              setRadius(meters);
-            }}
-            onMouseUp={() => updateCircle(location)}
+            onChange={handleRadiusChange}
+            onMouseUp={handleRadiusChangeConfirmed}
             style={{ width: '50%' }}
           />
           <label>{(radius / 1609.34).toFixed(1)} miles</label>
@@ -1247,7 +1222,7 @@ const MapComponent = () => {
                       cursor: 'pointer',
                       transition: 'background-color 0.2s ease',
                       textAlign: 'center',
-                      flex: '1',  // Ensures all boxes are equal width
+                      flex: '1',
                     }}
                   >
                     {price}
@@ -1316,7 +1291,7 @@ const MapComponent = () => {
 
             <div className='all-filters-option'>
               <h3>Hours</h3>
-              <div class="all-filters-hours-option-content" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', fontSize: '15px' }}>
+              <div className="all-filters-hours-option-content" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', fontSize: '15px' }}>
               {hoursOptions.map((hour) => (
                 <div key={hour} style={{ flex: '1' }}>
                   <div
@@ -1384,6 +1359,11 @@ const MapComponent = () => {
                     </label>
                   </div>
                 ))}
+                {/* recently added, might be buggy */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
+                  <button className='clear-btn' onClick={handleAnyCraving} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+                  <button className='done-btn' onClick={setCravingsChangeConfirmed(true)} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
+                </div>
               </div> 
             </div>
 
@@ -1409,6 +1389,11 @@ const MapComponent = () => {
                     </label>
                   </div>
                 ))}
+                {/* recently added, might be buggy */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'right', gap: '8px', paddingTop: '8px', paddingRight: '10px' }}>
+                  <button className='clear-btn' onClick={handleClearAntiCraving} style={{ color: '#202124', fontWeight: 'bold' }}>Clear</button>
+                  <button className='done-btn' onClick={setAntiCravingsChangeConfirmed(true)} style={{ color: '#1E76E8', fontWeight: 'bold' }}>Done</button>
+                </div>
               </div>
             </div>
           </div>
