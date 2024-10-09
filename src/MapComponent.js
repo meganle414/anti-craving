@@ -7,6 +7,7 @@ const MapComponent = () => {
   const [map, setMap] = useState(null);
   const [radius, setRadius] = useState(4828); // ~3 miles by default
   const [location, setLocation] = useState({ lat: 41.8781, lng: -87.6298 }); // Default to Chicago
+  const autocompleteRef = useRef(null);
 
   // informaiton about current selections
   const [currentLocationMarker, setCurrentLocationMarker] = useState(null);
@@ -26,6 +27,7 @@ const MapComponent = () => {
   // whether scrolled or not on menu list
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // variables to keep track of when a change in filter is applied
   const [pricesChangeConfirmed, setPricesChangeConfirmed] = useState(false);
   const [cravingsChangeConfirmed, setCravingsChangeConfirmed] = useState(false);
   const [antiCravingsChangeConfirmed, setAntiCravingsChangeConfirmed] = useState(false);
@@ -40,10 +42,10 @@ const MapComponent = () => {
   const [isAllFiltersOpen, setIsAllFiltersOpen] = useState(false);
   const [isAllFiltersRatingDropdownOpen, setIsAllFiltersRatingDropdownOpen] = useState(false);
 
+  // options for mapping in dropdowns/filters
   const cuisines = ["American", "Barbecue", "Chinese", "French", "Hamburger", "Indian", "Italian", "Japanese", "Mexican", "Pizza", "Seafood", "Steak", "Sushi", "Thai"];
   const priceOptions = ['$', '$$', '$$$', '$$$$'];
   const hoursOptions = ['Any time', 'Open now'];
-  const autocompleteRef = useRef(null);
 
   const fetchRestaurants = (filters) => {
     const service = new window.google.maps.places.PlacesService(map);
@@ -77,6 +79,7 @@ const MapComponent = () => {
               ],
             };
   
+            // get more detailed information about each restaurants, billable information.
             return new Promise((resolve, reject) => {
               service.getDetails(detailsRequest, (place, detailsStatus) => {
                 if (detailsStatus === window.google.maps.places.PlacesServiceStatus.OK) {
@@ -89,7 +92,7 @@ const MapComponent = () => {
             });
           });
   
-          // Wait for all getDetails calls to complete
+          // Wait for all getDetails calls to complete and combine detailed information with existing information
           Promise.all(detailsPromises)
             .then((combinedRestaurants) => {
               setRestaurants(combinedRestaurants);
@@ -115,7 +118,7 @@ const MapComponent = () => {
   }, [antiRestaurants]); // Trigger filtering only when antiRestaurants changes
   
   useEffect(() => {
-    // only fetch if a change is applied
+    // only fetch if a change is applied to reduce unnecessary billing/fetching
     if (map && (cravingsChangeConfirmed || antiCravingsChangeConfirmed || radiusChangeConfirmed)) {
       const minPrice = pricesFilter.length === 0 ? 1 : mapPriceToGoogle(pricesFilter[0]);
       const maxPrice = pricesFilter.length === 0 ? 4: mapPriceToGoogle(pricesFilter[pricesFilter.length - 1]);
@@ -230,7 +233,6 @@ const MapComponent = () => {
     });
 
     setCurrentCircle(newCircle);
-    // need to refetch restaurants in this area
   };
 
   const handleScroll = (event) => {
@@ -349,7 +351,7 @@ const MapComponent = () => {
   };
   
   const handleRadiusChangeConfirmed = () => {
-    setRadiusChangeConfirmed(true); // Trigger re-fetch after radius change is finalized
+    setRadiusChangeConfirmed(true);
   };
 
   const handleAllFiltersClick = () => {
@@ -512,38 +514,6 @@ const MapComponent = () => {
             textAlign: 'left',
           }}
         >
-          <style>
-            {`
-              /* For WebKit browsers (Chrome, Safari, Edge) */
-              div::-webkit-scrollbar {
-                width: 6px; /* Slim scrollbar width */
-              }
-              div::-webkit-scrollbar-track {
-                background: transparent; /* Background of the track */
-              }
-              div::-webkit-scrollbar-thumb {
-                background-color: gray; /* Scrollbar color */
-                border-radius: 10px;     /* Rounded edges */
-              }
-              div::-webkit-scrollbar-thumb:hover {
-                background-color: darkgray; /* Darker on hover */
-              }
-              div::-webkit-scrollbar-button {
-                display: none; /* Remove scrollbar arrows/buttons */
-              }
-
-              /* For Firefox */
-              div {
-                scrollbar-width: thin;
-                scrollbar-color: gray lightgray;
-              }
-
-              /* Hides scrollbar arrows on Firefox */
-              div::-webkit-scrollbar-button {
-                display: none;
-              }
-            `}
-          </style>
           <h1 style={{ paddingLeft: '20px' }}>Results</h1>
           <ul>
             {restaurants.map((restaurant) => (
@@ -601,38 +571,6 @@ const MapComponent = () => {
           zIndex: 1000,
           color: 'black',
         }}>
-          <style>
-            {`
-              /* For WebKit browsers (Chrome, Safari, Edge) */
-              div::-webkit-scrollbar {
-                width: 6px; /* Slim scrollbar width */
-              }
-              div::-webkit-scrollbar-track {
-                background: transparent; /* Background of the track */
-              }
-              div::-webkit-scrollbar-thumb {
-                background-color: gray; /* Scrollbar color */
-                border-radius: 10px;     /* Rounded edges */
-              }
-              div::-webkit-scrollbar-thumb:hover {
-                background-color: darkgray; /* Darker on hover */
-              }
-              div::-webkit-scrollbar-button {
-                display: none; /* Remove scrollbar arrows/buttons */
-              }
-
-              /* For Firefox */
-              div {
-                scrollbar-width: thin;
-                scrollbar-color: gray lightgray;
-              }
-
-              /* Hides scrollbar arrows on Firefox */
-              div::-webkit-scrollbar-button {
-                display: none;
-              }
-            `}
-          </style>
           <button onClick={() => setSelectedRestaurant(null)}
             style={{ 
               background: 'white', 
